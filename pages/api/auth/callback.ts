@@ -1,3 +1,4 @@
+// pages/api/auth/callback.ts
 import type { NextApiRequest, NextApiResponse } from "next";
 import { google } from "googleapis";
 import { serialize } from "cookie";
@@ -9,7 +10,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (req.method !== "GET") return res.status(405).send("Method not allowed");
 
     const { error, error_description, code } = req.query as Record<string, string>;
-    if (error) return res.status(400).send(`Google OAuth error: ${error}${error_description ? " - " + error_description : ""}`);
+    if (error) {
+      return res.status(400).send(`Google OAuth error: ${error}${error_description ? " - " + error_description : ""}`);
+    }
     if (!code) return res.status(400).send("Missing 'code'");
 
     if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET || !BASE_URL) {
@@ -25,10 +28,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const { tokens } = await oauth2Client.getToken(code);
     if (!tokens?.access_token) return res.status(500).send("Token exchange failed.");
 
-    const data = Buffer.from(JSON.stringify(tokens)).toString("base64");
-    res.setHeader("Set-Cookie", serialize("gbp_tokens", data, {
-      httpOnly: true, secure: true, sameSite: "lax", path: "/", maxAge: 60 * 60 * 24 * 30
-    }));
+    // Set cookie: base64 + URL-encode (sigurno za header)
+    const dataB64 = Buffer.from(JSON.stringify(tokens)).toString("base64");
+    const value = encodeURIComponent(dataB64);
+
+    res.setHeader(
+      "Set-Cookie",
+      serialize("gbp_tokens", value, {
+        httpOnly: true,
+        secure: true,
+        sameSite: "lax",
+        path: "/",
+        maxAge: 60 * 60 * 24 * 30, // 30 days
+      })
+    );
 
     return res.redirect(302, "/dashboard");
   } catch (e: any) {
