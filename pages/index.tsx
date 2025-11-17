@@ -16,43 +16,41 @@ export default function Dashboard() {
   const [businessName, setBusinessName] = useState("Your Business");
   const [reviewText, setReviewText] = useState("");
 
-  // 1) proveri da li imamo cookie sa tokenima (grubo; od servera bolje, ali za MVP ok)
+  // 1) DETEKCIJA POVEZANOSTI: ne čitamo cookie (httpOnly) — pitamo server
   useEffect(() => {
-    // Ako ima bilo kakvih cookies, pokušaćemo da učitamo naloge.
-    // U suprotnom nudimo "Connect Google".
-    const hasCookies = document.cookie.includes("gbp_tokens=");
-    setConnected(hasCookies ? true : false);
+    async function probe() {
+      try {
+        const r = await fetch("/api/gbp/accounts");
+        if (r.status === 200) {
+          const d = await r.json();
+          setConnected(true);
+          setAccounts(d.accounts || []);
+          if (d.accounts?.[0]?.name) setAccount(d.accounts[0].name);
+        } else {
+          setConnected(false);
+        }
+      } catch {
+        setConnected(false);
+      }
+    }
+    probe();
   }, []);
 
-  // 2) ako smo povezani, povuci accounts
+  // 2) Kad odaberemo account, povuci locations
   useEffect(() => {
-    if (connected) {
-      fetch("/api/gbp/accounts")
-        .then(r => r.json())
-        .then(d => {
-          if (d?.accounts) {
-            setAccounts(d.accounts);
-            if (d.accounts[0]?.name) setAccount(d.accounts[0].name);
-          }
-        })
-        .catch(() => {});
+    async function loadLocations() {
+      if (!account) return;
+      try {
+        const r = await fetch(`/api/gbp/locations?account=${encodeURIComponent(account)}`);
+        if (r.ok) {
+          const d = await r.json();
+          setLocations(d.locations || []);
+          if (d.locations?.[0]?.name) setLocation(d.locations[0].name);
+          if (d.locations?.[0]?.title) setBusinessName(d.locations[0].title);
+        }
+      } catch {}
     }
-  }, [connected]);
-
-  // 3) kad se izabere account, povuci locations
-  useEffect(() => {
-    if (account) {
-      fetch(`/api/gbp/locations?account=${encodeURIComponent(account)}`)
-        .then(r => r.json())
-        .then(d => {
-          if (d?.locations) {
-            setLocations(d.locations);
-            if (d.locations[0]?.name) setLocation(d.locations[0].name);
-            if (d.locations[0]?.title) setBusinessName(d.locations[0].title);
-          }
-        })
-        .catch(() => {});
-    }
+    loadLocations();
   }, [account]);
 
   async function generatePost() {
@@ -85,76 +83,43 @@ export default function Dashboard() {
       <h1 className="text-3xl font-bold mb-3">Dashboard</h1>
       <p className="mb-8">Poveži Google profil, izaberi nalog i lokaciju, pa koristi AI akcije.</p>
 
-      {/* CONNECT */}
+      {/* CONNECT / STATUS */}
+      {connected === null && <p>Loading…</p>}
       {connected === false && (
         <div className="mb-10">
-          <a className="px-4 py-2 rounded bg-black text-white" href="/api/auth/google">Connect Google Business</a>
+          <a className="px-4 py-2 rounded bg-black text-white" href="/api/auth/google">
+            Connect Google Business
+          </a>
+          <p className="text-sm text-gray-500 mt-2">
+            (Ako si upravo verifikovao GBP, klikni Connect da obnoviš dozvole.)
+          </p>
         </div>
       )}
 
       {/* ACCOUNT & LOCATION */}
       {connected && (
-        <div className="space-y-4 mb-10">
-          <div>
-            <label className="block text-sm font-medium mb-1">Account</label>
-            <select
-              className="border p-2 w-full"
-              value={account}
-              onChange={(e) => setAccount(e.target.value)}
-            >
-              {accounts.map(a => (
-                <option key={a.name} value={a.name}>
-                  {a.accountName || a.name} ({a.type})
-                </option>
-              ))}
-            </select>
-          </div>
+        <>
+          <div className="space-y-4 mb-10">
+            <div>
+              <label className="block text-sm font-medium mb-1">Account</label>
+              <select
+                className="border p-2 w-full"
+                value={account}
+                onChange={(e) => setAccount(e.target.value)}
+              >
+                {accounts.map((a) => (
+                  <option key={a.name} value={a.name}>
+                    {a.accountName || a.name} ({a.type})
+                  </option>
+                ))}
+              </select>
+              {accounts.length === 0 && (
+                <p className="text-sm text-gray-500 mt-2">
+                  Nema dostupnih naloga. Uveri se da je tvoj Gmail Owner/Manager na Business Profile-u.
+                </p>
+              )}
+            </div>
 
-          <div>
-            <label className="block text-sm font-medium mb-1">Location</label>
-            <select
-              className="border p-2 w-full"
-              value={location}
-              onChange={(e) => setLocation(e.target.value)}
-            >
-              {locations.map(l => (
-                <option key={l.name} value={l.name}>
-                  {l.title || l.name} {l.storeCode ? `• ${l.storeCode}` : ""}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-      )}
-
-      {/* AI: CREATE POST */}
-      {connected && (
-        <section className="space-y-2 mb-10">
-          <h2 className="text-xl font-semibold">Create Post (AI)</h2>
-          <input className="border p-2 w-full" placeholder="Topic" value={topic} onChange={e=>setTopic(e.target.value)} />
-          <input className="border p-2 w-full" placeholder="Language" value={language} onChange={e=>setLanguage(e.target.value)} />
-          <button className="px-4 py-2 rounded bg-black text-white" onClick={generatePost}>Generate Post</button>
-        </section>
-      )}
-
-      {/* AI: RESPOND REVIEW */}
-      {connected && (
-        <section className="space-y-2 mb-10">
-          <h2 className="text-xl font-semibold">Respond to Review (AI)</h2>
-          <input className="border p-2 w-full" placeholder="Business Name" value={businessName} onChange={e=>setBusinessName(e.target.value)} />
-          <textarea className="border p-2 w-full" placeholder="Review text" value={reviewText} onChange={e=>setReviewText(e.target.value)} />
-          <input className="border p-2 w-full" placeholder="Language" value={language} onChange={e=>setLanguage(e.target.value)} />
-          <button className="px-4 py-2 rounded bg-black text-white" onClick={generateReply}>Generate Reply</button>
-        </section>
-      )}
-
-      {/* AI: ANALYTICS */}
-      {connected && (
-        <section className="space-y-2 mb-10">
-          <h2 className="text-xl font-semibold">Analytics (AI insights)</h2>
-          <button className="px-4 py-2 rounded bg-black text-white" onClick={getInsights}>Get Insights</button>
-        </section>
-      )}
-    </div>
-  );
-}
+            <div>
+              <label className="block text-sm font-medium mb-1">Location</label>
+              <select
