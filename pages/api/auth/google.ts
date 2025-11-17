@@ -1,7 +1,5 @@
-// pages/api/auth/google.ts
 import { google } from "googleapis";
-
-const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://bizpilot-mnbfqjj3n-boskovasiljevic90s-projects.vercel.app";
+const BASE_URL = process.env.NEXT_PUBLIC_APP_URL!;
 
 export default async function handler(req: any, res: any) {
   const oauth2Client = new google.auth.OAuth2(
@@ -13,7 +11,7 @@ export default async function handler(req: any, res: any) {
   const url = oauth2Client.generateAuthUrl({
     access_type: "offline",
     prompt: "consent",
-    scope: ["https://www.googleapis.com/auth/business.manage"],
+    scope: ["https://www.googleapis.com/auth/business.manage"]
   });
 
   res.redirect(url);
