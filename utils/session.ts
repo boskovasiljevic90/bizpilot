@@ -2,13 +2,13 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import {
   getIronSession,
-  type IronSessionOptions,
+  type SessionOptions,
   type IronSession,
   type IronSessionData,
 } from "iron-session";
 import type { SessionTokens, Plan } from "./types";
 
-// Eksplicitno definišemo podatke koje čuvamo u sesiji
+// Podaci koje čuvamo u sesiji
 export interface SessionData extends IronSessionData {
   tokens?: SessionTokens;
   email?: string | null;
@@ -18,11 +18,11 @@ export interface SessionData extends IronSessionData {
 // Tip same sesije (IronSession nad našim SessionData)
 export type Session = IronSession<SessionData>;
 
-const sessionOptions: IronSessionOptions = {
+const sessionOptions: SessionOptions = {
   cookieName: "bizpilot_session",
   password: process.env.SESSION_SECRET as string,
   cookieOptions: {
-    secure: true,
+    secure: true,   // na Vercel/HTTPS
     sameSite: "lax",
     path: "/",
   },
