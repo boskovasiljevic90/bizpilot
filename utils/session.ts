@@ -4,12 +4,11 @@ import {
   getIronSession,
   type SessionOptions,
   type IronSession,
-  type IronSessionData,
 } from "iron-session";
 import type { SessionTokens, Plan } from "./types";
 
-// Podaci koje čuvamo u sesiji
-export interface SessionData extends IronSessionData {
+// Podaci koje čuvamo u sesiji (definišemo sami – ne importujemo IronSessionData)
+export interface SessionData {
   tokens?: SessionTokens;
   email?: string | null;
   plan?: Plan;
@@ -22,7 +21,7 @@ const sessionOptions: SessionOptions = {
   cookieName: "bizpilot_session",
   password: process.env.SESSION_SECRET as string,
   cookieOptions: {
-    secure: true,   // na Vercel/HTTPS
+    secure: true,   // true na Vercel/HTTPS
     sameSite: "lax",
     path: "/",
   },
