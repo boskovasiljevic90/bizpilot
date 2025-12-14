@@ -12,7 +12,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   try {
     const { reviewText, rating, locale, businessName } = req.body || {};
     const lang = typeof locale === "string" ? locale : "en";
-
     if (!reviewText) return res.status(400).json({ error: "Missing reviewText" });
 
     const prompt = [
