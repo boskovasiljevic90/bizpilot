@@ -12,7 +12,6 @@ export default function Home() {
       <main className="min-h-screen bg-slate-950 text-slate-100">
         <header className="max-w-5xl mx-auto px-6 py-6 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            {/* Logo privremeno tekstualno; posle ubaci SVG */}
             <span className="text-xl font-extrabold">
               need<span className="text-teal-300">AI</span>.help
             </span>
@@ -28,7 +27,7 @@ export default function Home() {
             Autonomous Google Business Manager, powered by AI.
           </h1>
           <p className="mt-4 text-slate-300">
-            BizPilot automatski priprema postove, odgovara na recenzije i pomaže oko informacija — na svim jezicima.
+            BizPilot drafts posts, replies to reviews, and helps maintain business info — across all languages.
           </p>
 
           <div className="mt-8 flex flex-wrap gap-3">
@@ -47,7 +46,7 @@ export default function Home() {
           </div>
 
           <p className="mt-3 text-sm text-slate-400">
-            Free plan za testiranje. Pro plan €29.99 / month (14 dana trial).
+            Free plan to try. Pro plan €29.99 / month (14-day trial).
           </p>
         </section>
       </main>
