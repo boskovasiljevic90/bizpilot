@@ -1,27 +1,31 @@
+// pages/api/auth/whoami.ts
 import type { NextApiRequest, NextApiResponse } from "next";
 import { session } from "@/utils/session";
-import { getActiveSubscriptionStatus } from "@/utils/stripe";
+import { getActiveSubscriptionStatus, checkStripeEnv } from "@/utils/stripe";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  const s = await session(req, res);
-  let plan = s.plan || "free";
+  try {
+    const s = await session(req, res);
 
-  if (s.email && process.env.STRIPE_SECRET_KEY) {
-    try {
-      const sub = await getActiveSubscriptionStatus(s.email);
-      if (sub.active) plan = "pro";
-    } catch {}
+    const stripeEnv = checkStripeEnv();
+    const subStatus = await getActiveSubscriptionStatus(s.email || null);
+
+    res.status(200).json({
+      ok: true,
+      session: {
+        email: s.email || null,
+        plan: s.plan || null,
+        hasTokens: !!s.tokens,
+      },
+      stripe: {
+        env: stripeEnv,
+        subscriptionStatus: subStatus, // npr. "trialing", "active", null...
+      },
+    });
+  } catch (e: any) {
+    res.status(500).json({
+      ok: false,
+      error: e?.message || String(e),
+    });
   }
-
-  s.plan = plan;
-  await s.save();
-
-  const t = s.tokens;
-  res.status(200).json({
-    hasSession: !!t,
-    email: s.email || null,
-    plan,
-    tokenKeys: t ? Object.keys(t) : [],
-    scope: t?.scope || null
-  });
 }
