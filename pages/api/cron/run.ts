@@ -1,6 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 
-/** Build absolute URL to our own API */
 function getBaseUrl(req: NextApiRequest) {
   const fromEnv = process.env.NEXT_PUBLIC_BASE_URL;
   if (fromEnv) return fromEnv.replace(/\/+$/, "");
@@ -9,31 +8,32 @@ function getBaseUrl(req: NextApiRequest) {
   return `${proto}://${host}`;
 }
 
-/** Allow GET (for Vercel Cron UI) and POST (for manual curl). Secret ide u query ?secret= */
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  // Vercel Cron šalje GET; ostavimo i POST za ručni test
   if (req.method !== "GET" && req.method !== "POST") {
     res.setHeader("Allow", "GET, POST");
     return res.status(405).json({ error: "Method Not Allowed" });
   }
 
+  // Vercel automatski dodaje: Authorization: Bearer ${CRON_SECRET}
   const want = process.env.CRON_SECRET || "";
-  const fromHeader = (req.headers["x-cron-secret"] as string) || "";
-  const fromQuery = (req.query.secret as string) || "";
-  const provided = fromHeader || fromQuery;
+  const auth = (req.headers.authorization || "").trim();
+  const isBearerValid = auth === `Bearer ${want}`;
 
-  if (!want || provided !== want) {
+  // Dozvoli i ?secret=… kao alternativu za ručne testove u browseru
+  const qsOK = (req.query.secret as string) === want;
+
+  if (!want || (!isBearerValid && !qsOK)) {
     return res.status(401).json({ error: "Unauthorized (bad or missing secret)" });
   }
 
   try {
     const base = getBaseUrl(req);
-
     const r = await fetch(`${base}/api/autopilot/run`, {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ reason: "cron" }),
+      body: JSON.stringify({ reason: "cron" })
     });
-
     const payload = await r.json().catch(() => ({}));
     return res.status(200).json({ ok: true, status: r.status, payload });
   } catch (e: any) {
