@@ -1,34 +1,38 @@
+// pages/api/auth/google.ts
 import type { NextApiRequest, NextApiResponse } from "next";
-import { oauthClient } from "@/utils/google";
+import { google } from "googleapis";
 import { session } from "@/utils/session";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  try {
-    // Guard: env
-    if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET || !process.env.SESSION_SECRET) {
-      return res.status(500).json({
-        error: "Missing OAuth env",
-        need: {
-          GOOGLE_CLIENT_ID: !!process.env.GOOGLE_CLIENT_ID,
-          GOOGLE_CLIENT_SECRET: !!process.env.GOOGLE_CLIENT_SECRET,
-          SESSION_SECRET_len: (process.env.SESSION_SECRET || "").length,
-        },
-      });
-    }
+  const s = await session(req, res);
+  s.email = null;
+  s.plan = s.plan || "free";
+  s.tokens = undefined;
+  await s.save();
 
-    const s = await session(req, res);
-    s.tokens = undefined;
-    s.email = null;
-    await s.save();
+  const clientId = process.env.GOOGLE_CLIENT_ID as string;
+  const clientSecret = process.env.GOOGLE_CLIENT_SECRET as string;
+  const base = process.env.NEXT_PUBLIC_BASE_URL || `https://${req.headers.host}`;
+  const redirectUri = `${base}/api/auth/callback`;
 
-    const client = oauthClient(req);
-    const url = client.generateAuthUrl({
-      access_type: "offline",
-      prompt: "consent",
-      scope: ["https://www.googleapis.com/auth/business.manage", "openid", "email"],
-    });
-    res.redirect(url);
-  } catch (e:any) {
-    res.status(500).json({ error: "auth/google crashed", message: e?.message || String(e) });
+  if (!clientId || !clientSecret) {
+    return res.status(500).json({ error: "Missing Google client env" });
   }
+
+  const oauth2Client = new google.auth.OAuth2(clientId, clientSecret, redirectUri);
+
+  const scopes = [
+    "openid",
+    "email",
+    "profile",
+    "https://www.googleapis.com/auth/business.manage",
+  ];
+
+  const url = oauth2Client.generateAuthUrl({
+    access_type: "offline",
+    prompt: "consent",
+    scope: scopes,
+  });
+
+  res.redirect(302, url);
 }
