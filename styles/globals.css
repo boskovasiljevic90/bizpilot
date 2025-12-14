@@ -2,8 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* tamni background koji već koristimo */
-html, body, #__next {
-  height: 100%;
-  background-color: #0f172a; /* slate-950 */
-}
+html, body, #__next { height: 100%; }
+body { @apply bg-white text-gray-900; }
+a { @apply text-blue-600 hover:underline; }
+button:disabled { @apply opacity-50 cursor-not-allowed; }
