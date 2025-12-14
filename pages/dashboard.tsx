@@ -1,304 +1,151 @@
 // pages/dashboard.tsx
 import { useEffect, useState } from "react";
 
-type Account = { name: string; accountName: string; type?: string; state?: string };
-type Location = { name: string; title: string; storeCode?: string; websiteUri?: string; categories?: string };
-type Review = {
-  name: string;               // "accounts/.../locations/.../reviews/..."
-  reviewId?: string;
-  starRating?: string;
-  comment?: string;
-  reviewer?: { displayName?: string };
-  createTime?: string;
-  updateTime?: string;
-  reviewReply?: { comment?: string; updateTime?: string };
-};
+type Opt = { value: string; label: string };
 
 export default function Dashboard() {
-  const [loading, setLoading] = useState(false);
-  const [accounts, setAccounts] = useState<Account[]>([]);
-  const [selectedAccount, setSelectedAccount] = useState<string>("");
-  const [locations, setLocations] = useState<Location[]>([]);
-  const [selectedLocation, setSelectedLocation] = useState<string>("");
-  const [reviews, setReviews] = useState<Review[]>([]);
-  const [aiDraft, setAiDraft] = useState<string>("");
-  const [replyText, setReplyText] = useState<string>("");
+  const [status, setStatus] = useState<string>("Ready");
+  const [diag, setDiag] = useState<any>(null);
 
-  async function fetchAccounts() {
-    setLoading(true);
-    try {
-      const r = await fetch("/api/gbp/accounts");
-      const j = await r.json();
-      if (!r.ok) throw new Error(j.error || "accounts error");
-      setAccounts(j.accounts || []);
-    } catch (e) {
-      alert("Accounts error: " + (e as Error).message);
-    } finally {
-      setLoading(false);
-    }
+  const [accounts, setAccounts] = useState<Opt[]>([]);
+  const [account, setAccount] = useState<string>("");
+
+  const [locations, setLocations] = useState<Opt[]>([]);
+  const [location, setLocation] = useState<string>("");
+
+  async function callJSON(url: string) {
+    setStatus(`Calling ${url} ...`);
+    const r = await fetch(url);
+    const js = await r.json().catch(() => ({}));
+    setDiag({ url, status: r.status, payload: js });
+    return { ok: r.ok, js };
   }
 
-  async function fetchLocations(accName: string) {
-    setLoading(true);
-    try {
-      const r = await fetch(`/api/gbp/locations?account=${encodeURIComponent(accName)}`);
-      const j = await r.json();
-      if (!r.ok) throw new Error(j.error || "locations error");
-      setLocations(j.locations || []);
-    } catch (e) {
-      alert("Locations error: " + (e as Error).message);
-    } finally {
-      setLoading(false);
-    }
+  async function onConnect() {
+    window.location.href = "/api/auth/google";
   }
 
-  async function fetchReviews(locName: string) {
-    setLoading(true);
-    try {
-      const r = await fetch(`/api/gbp/reviews?location=${encodeURIComponent(locName)}`);
-      const j = await r.json();
-      if (!r.ok) throw new Error(j.error || "reviews error");
-      setReviews(j.reviews || []);
-    } catch (e) {
-      alert("Reviews error: " + (e as Error).message);
-    } finally {
-      setLoading(false);
+  async function onLoadAccounts() {
+    const { ok, js } = await callJSON("/api/gbp/accounts");
+    if (!ok) return;
+    if (!js?.accounts?.length) {
+      setStatus("No accounts returned");
+      setAccounts([]);
+      setAccount("");
+      return;
     }
+    const opts = js.accounts.map((a: any) => ({
+      value: a.name, // "accounts/XXXX"
+      label: a.accountName || a.name,
+    }));
+    setAccounts(opts);
+    setAccount(opts[0].value);
+    setStatus(`Loaded ${opts.length} account(s)`);
   }
 
-  async function makeAiReply(review: Review) {
-    try {
-      const r = await fetch("/api/ai/generatePost", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          purpose: "review-reply",
-          businessType: locations.find(l => l.name === selectedLocation)?.categories || "local business",
-          reviewText: review.comment || "",
-          starRating: review.starRating || "",
-          languageHint: "MATCH_REVIEW_LANGUAGE"
-        }),
-      });
-      const j = await r.json();
-      if (!r.ok) throw new Error(j.error || "AI error");
-      setReplyText(j.text || "");
-    } catch (e) {
-      alert("AI reply error: " + (e as Error).message);
+  async function onLoadLocations() {
+    if (!account) {
+      setStatus("Select account first");
+      return;
     }
+    const { ok, js } = await callJSON(`/api/gbp/locations?account=${encodeURIComponent(account)}`);
+    if (!ok) return;
+    const opts = (js.locations || []).map((l: any) => ({
+      value: l.name, // "locations/XXXX"
+      label: l.title || l.name,
+    }));
+    setLocations(opts);
+    setLocation(opts[0]?.value || "");
+    setStatus(`Loaded ${opts.length} location(s)`);
   }
 
-  async function sendReply(review: Review) {
-    try {
-      const text = replyText.trim();
-      if (!text) return alert("Empty reply.");
-      const r = await fetch("/api/gbp/respondReview", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          location: selectedLocation,
-          reviewName: review.name,
-          replyText: text,
-        }),
-      });
-      const j = await r.json();
-      if (!r.ok) throw new Error(j.error || "reply error");
-      alert("Reply sent.");
-      await fetchReviews(selectedLocation);
-      setReplyText("");
-    } catch (e) {
-      alert("Reply failed: " + (e as Error).message);
-    }
+  // maleni helper da se odmah vidi ko je ulogovan
+  async function checkWho() {
+    const r = await fetch("/api/auth/whoami");
+    const js = await r.json().catch(() => ({}));
+    setDiag((d: any) => ({ ...(d || {}), whoami: js }));
   }
 
-  async function makeAiPost() {
-    try {
-      const r = await fetch("/api/ai/generatePost", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          purpose: "post",
-          businessType: locations.find(l => l.name === selectedLocation)?.categories || "local business",
-          languageHint: "ENGLISH",
-        }),
-      });
-      const j = await r.json();
-      if (!r.ok) throw new Error(j.error || "AI error");
-      setAiDraft(j.text || "");
-    } catch (e) {
-      alert("AI post error: " + (e as Error).message);
-    }
-  }
-
-  async function updateHoursSimple() {
-    const weekdays = prompt("Enter hours (e.g. Mon-Fri 09:00-17:00, Sat 10:00-14:00, Sun closed)");
-    if (!weekdays) return;
-    try {
-      const r = await fetch("/api/gbp/updateHours", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          location: selectedLocation,
-          humanHours: weekdays
-        }),
-      });
-      const j = await r.json();
-      if (!r.ok) throw new Error(j.error || "update hours error");
-      alert("Hours updated.");
-    } catch (e) {
-      alert("Update hours failed: " + (e as Error).message);
-    }
-  }
+  useEffect(() => {
+    checkWho();
+  }, []);
 
   return (
-    <div style={{ padding: 16, maxWidth: 1000, margin: "0 auto", fontFamily: "Inter, system-ui, sans-serif" }}>
-      <h1 style={{ fontSize: 28, fontWeight: 700, marginBottom: 8 }}>BizPilot Dashboard</h1>
-      <p style={{ color: "#555", marginBottom: 16 }}>
-        Connect account → select location → manage reviews, hours, and AI drafting.
+    <div style={{ padding: 20, maxWidth: 1000, margin: "0 auto", fontFamily: "ui-sans-serif, system-ui" }}>
+      <h1 style={{ fontSize: 28, fontWeight: 800, marginBottom: 12 }}>BizPilot Dashboard</h1>
+      <p style={{ marginBottom: 16, color: "#555" }}>
+        Connect → Load Accounts → Select Account → Load Locations → Select Location
       </p>
 
-      <div style={{ display: "flex", gap: 16, flexWrap: "wrap", marginBottom: 16 }}>
-        <a href="/api/auth/google" style={btn()}>
-          Connect Google Business
-        </a>
-        <button onClick={fetchAccounts} style={btn()} disabled={loading}>Load Accounts</button>
-
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 12, marginBottom: 16 }}>
+        <button onClick={onConnect} style={btn}>Connect Google Business</button>
+        <button onClick={onLoadAccounts} style={btn}>Load Accounts</button>
         <select
-          value={selectedAccount}
-          onChange={(e) => {
-            const v = e.target.value;
-            setSelectedAccount(v);
-            if (v) fetchLocations(v);
-          }}
-          style={select()}
+          value={account}
+          onChange={(e) => setAccount(e.target.value)}
+          style={inp}
         >
           <option value="">Select account…</option>
           {accounts.map((a) => (
-            <option key={a.name} value={a.name}>
-              {a.accountName || a.name}
-            </option>
+            <option key={a.value} value={a.value}>{a.label}</option>
           ))}
         </select>
-
-        <select
-          value={selectedLocation}
-          onChange={(e) => {
-            const v = e.target.value;
-            setSelectedLocation(v);
-            if (v) fetchReviews(v);
-          }}
-          style={select()}
-        >
-          <option value="">Select location…</option>
-          {locations.map((l) => (
-            <option key={l.name} value={l.name}>
-              {l.title}
-            </option>
-          ))}
-        </select>
-
-        <button onClick={() => selectedLocation ? fetchReviews(selectedLocation) : alert("Select location first")} style={btn()}>
-          Refresh Reviews
-        </button>
-
-        <button onClick={() => selectedLocation ? updateHoursSimple() : alert("Select location first")} style={btn()}>
-          Update Hours (quick)
-        </button>
+        <button onClick={onLoadLocations} style={btn}>Load Locations</button>
       </div>
 
-      <div style={card()}>
-        <h2 style={h2()}>AI Drafts</h2>
-        <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 8 }}>
-          <button onClick={() => selectedLocation ? makeAiPost() : alert("Select location first")} style={btn()}>
-            Generate Post Idea
-          </button>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 24 }}>
+        <div>
+          <label style={lbl}>Account</label>
+          <select value={account} onChange={(e) => setAccount(e.target.value)} style={inp}>
+            <option value="">Select account…</option>
+            {accounts.map((a) => (
+              <option key={a.value} value={a.value}>{a.label}</option>
+            ))}
+          </select>
         </div>
-        <textarea
-          value={aiDraft}
-          onChange={(e) => setAiDraft(e.target.value)}
-          placeholder="Post draft will appear here…"
-          rows={4}
-          style={textarea()}
-        />
-        <p style={{ fontSize: 12, color: "#777" }}>Note: Posting to GBP posts programmatically may be limited by API access; treat this as a draft.</p>
+        <div>
+          <label style={lbl}>Location</label>
+          <select value={location} onChange={(e) => setLocation(e.target.value)} style={inp}>
+            <option value="">Select location…</option>
+            {locations.map((l) => (
+              <option key={l.value} value={l.value}>{l.label}</option>
+            ))}
+          </select>
+        </div>
       </div>
 
-      <div style={card()}>
-        <h2 style={h2()}>Reviews</h2>
-        {!reviews.length ? (
-          <p style={{ color: "#666" }}>No reviews loaded yet.</p>
-        ) : (
-          reviews.map((r) => (
-            <div key={r.name} style={{ borderTop: "1px solid #eee", paddingTop: 12, marginTop: 12 }}>
-              <div style={{ display: "flex", justifyContent: "space-between" }}>
-                <strong>{r.reviewer?.displayName || "Anonymous"}</strong>
-                <span style={{ color: "#999" }}>{r.starRating || ""}</span>
-              </div>
-              <p style={{ marginTop: 6 }}>{r.comment || ""}</p>
-              {r.reviewReply?.comment ? (
-                <p style={{ color: "#2f7a2f" }}>
-                  Reply: {r.reviewReply.comment}
-                </p>
-              ) : (
-                <>
-                  <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
-                    <button onClick={() => makeAiReply(r)} style={btn()}>AI Suggest Reply</button>
-                    <button onClick={() => sendReply(r)} style={btn()}>Send Reply</button>
-                  </div>
-                  <textarea
-                    value={replyText}
-                    onChange={(e) => setReplyText(e.target.value)}
-                    placeholder="Your reply…"
-                    rows={3}
-                    style={textarea()}
-                  />
-                </>
-              )}
-            </div>
-          ))
-        )}
+      <div style={{ marginBottom: 12, fontSize: 13, color: "#444" }}>
+        <b>Status:</b> {status}
+      </div>
+
+      <div>
+        <label style={lbl}>Diagnostics (raw JSON)</label>
+        <textarea
+          readOnly
+          value={JSON.stringify(diag ?? {}, null, 2)}
+          style={{ width: "100%", height: 300, fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace", fontSize: 12, padding: 10, border: "1px solid #ddd", borderRadius: 8 }}
+        />
       </div>
     </div>
   );
 }
 
-function btn() {
-  return {
-    padding: "8px 12px",
-    borderRadius: 8,
-    border: "1px solid #ddd",
-    background: "#fff",
-    cursor: "pointer",
-  } as React.CSSProperties;
-}
-function select() {
-  return {
-    padding: "8px 10px",
-    borderRadius: 8,
-    border: "1px solid #ddd",
-    minWidth: 220,
-    background: "#fff",
-  } as React.CSSProperties;
-}
-function card() {
-  return {
-    padding: 16,
-    border: "1px solid #eee",
-    borderRadius: 12,
-    marginBottom: 16,
-    background: "#fafafa",
-  } as React.CSSProperties;
-}
-function h2() {
-  return { fontSize: 18, fontWeight: 700, marginBottom: 8 } as React.CSSProperties;
-}
-function textarea() {
-  return {
-    width: "100%",
-    borderRadius: 8,
-    border: "1px solid #ddd",
-    padding: 10,
-    marginTop: 10,
-    background: "#fff",
-    fontFamily: "inherit",
-  } as React.CSSProperties;
-}
+const btn: React.CSSProperties = {
+  background: "black",
+  color: "white",
+  border: "none",
+  borderRadius: 8,
+  padding: "10px 12px",
+  cursor: "pointer",
+  fontWeight: 600,
+};
+
+const inp: React.CSSProperties = {
+  width: "100%",
+  padding: "10px 12px",
+  borderRadius: 8,
+  border: "1px solid #ddd",
+  background: "white",
+};
+
+const lbl: React.CSSProperties = { display: "block", marginBottom: 6, fontWeight: 600 };
