@@ -1,27 +1,37 @@
+// pages/api/gbp/locations.ts
 import type { NextApiRequest, NextApiResponse } from "next";
 import { session } from "@/utils/session";
 import { fromSession } from "@/utils/google";
-import type { GbpLocation } from "@/utils/types";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  const s = await session(req, res);
-  const tokens = s.tokens;
-  if (!tokens?.access_token) return res.status(401).json({ error: "Not connected to Google Business" });
+  try {
+    if (req.method !== "GET") return res.status(405).json({ error: "Method not allowed" });
 
-  const account = req.query.account as string;
-  if (!account) return res.status(400).json({ error: "Missing 'account' query param" });
+    const { account } = req.query;
+    if (!account || typeof account !== "string") {
+      return res.status(400).json({ error: "Missing ?account=accounts/XXXX" });
+    }
 
-  const auth = fromSession(tokens);
-  const params = new URLSearchParams({ readMask: "name,title,storeCode,languageCode,profile,metadata" });
-  const url = `https://mybusinessbusinessinformation.googleapis.com/v1/${encodeURIComponent(account)}/locations?${params.toString()}`;
-  const { data }: any = await (auth as any).request({ url, method: "GET" });
+    const s = await session(req, res);
+    const tokens = s.tokens;
+    if (!tokens?.access_token) {
+      return res.status(401).json({ error: "Not connected to Google Business" });
+    }
 
-  const list: GbpLocation[] = Array.isArray(data?.locations) ? data.locations : [];
-  const locations = list.map(l => ({
-    name: l?.name ?? "",
-    title: l?.title ?? "",
-    storeCode: l?.storeCode ?? "",
-    languageCode: l?.languageCode ?? ""
-  }));
-  res.status(200).json({ locations });
+    const auth = fromSession(tokens);
+    const url = `https://mybusinessbusinessinformation.googleapis.com/v1/${encodeURIComponent(account)}/locations`;
+    const { data }: any = await (auth as any).request({ url, method: "GET" });
+
+    const locations = (data?.locations || []).map((l: any) => ({
+      name: l.name,             // "locations/1234567890"
+      title: l.title,
+      storeCode: l.storeCode,
+      websiteUri: l.websiteUri,
+      categories: l.primaryCategory?.displayName,
+    }));
+
+    return res.status(200).json({ ok: true, locations });
+  } catch (e: any) {
+    return res.status(500).json({ error: "locations failed", message: e?.message || String(e) });
+  }
 }
