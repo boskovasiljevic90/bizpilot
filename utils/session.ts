@@ -1,37 +1,20 @@
 // utils/session.ts
 import type { NextApiRequest, NextApiResponse } from "next";
 import crypto from "crypto";
+import type { SessionShape, SessionTokens, Plan } from "./types";
 
 /**
- * Minimalna, sigurna cookie-sesija bez dodatnih paketa.
+ * Minimalna, HMAC-cookie sesija (bez third-party paketa).
  * Potrebno: SESSION_SECRET (>=32 char) u Vercel env.
- * Cookie: bp_sess (signed, base64)
+ * Cookie: bp_sess (signed, base64url)
  */
-
-export type Plan = "free" | "pro" | null;
-
-export type SessionTokens = {
-  access_token?: string;
-  refresh_token?: string;
-  scope?: string;
-  expiry_date?: number;
-  token_type?: string;
-};
-
-type SessionShape = {
-  email: string | null;
-  plan: Plan;
-  tokens?: SessionTokens | undefined;
-};
 
 const COOKIE_NAME = "bp_sess";
 const COOKIE_MAX_AGE = 60 * 60 * 24 * 60; // ~60 dana
 
 function getSecret(): Buffer {
   const s = (process.env.SESSION_SECRET || "").trim();
-  if (s.length < 32) {
-    throw new Error("SESSION_SECRET must be at least 32 characters");
-  }
+  if (s.length < 32) throw new Error("SESSION_SECRET must be at least 32 characters");
   return Buffer.from(s, "utf8");
 }
 
@@ -40,19 +23,8 @@ function sign(data: string, secret: Buffer) {
 }
 
 function serializeCookie(name: string, value: string, maxAge: number) {
-  const parts = [
-    `${name}=${value}`,
-    "Path=/",
-    "HttpOnly",
-    "SameSite=Lax",
-  ];
-  // Ako je deploy na https domaini – Vercel production: Secure
-  parts.push("Secure");
-  if (maxAge > 0) {
-    parts.push(`Max-Age=${maxAge}`);
-  } else {
-    // session cookie
-  }
+  const parts = [`${name}=${value}`, "Path=/", "HttpOnly", "SameSite=Lax", "Secure"];
+  if (maxAge > 0) parts.push(`Max-Age=${maxAge}`);
   return parts.join("; ");
 }
 
@@ -81,17 +53,16 @@ function decodePayload(value: string, secret: Buffer): SessionShape | null {
   const [payload, sig] = value.split(".");
   if (!payload || !sig) return null;
   const expected = sign(payload, secret);
-  if (!crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(expected))) {
-    return null;
-  }
+  if (!crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(expected))) return null;
   try {
     const json = Buffer.from(payload, "base64url").toString("utf8");
     const obj = JSON.parse(json);
-    return {
+    const out: SessionShape = {
       email: obj?.email ?? null,
       plan: (obj?.plan ?? "free") as Plan,
-      tokens: obj?.tokens,
+      tokens: obj?.tokens as SessionTokens | undefined,
     };
+    return out;
   } catch {
     return null;
   }
@@ -109,33 +80,20 @@ export async function session(req: NextApiRequest, res: NextApiResponse) {
   }
 
   return {
-    get email() {
-      return data.email;
-    },
-    set email(v: string | null) {
-      data.email = v;
-    },
-    get plan() {
-      return data.plan;
-    },
-    set plan(v: Plan) {
-      data.plan = v;
-    },
-    get tokens() {
-      return data.tokens;
-    },
-    set tokens(v: SessionTokens | undefined) {
-      data.tokens = v;
-    },
+    get email() { return data.email; },
+    set email(v: string | null) { data.email = v; },
+    get plan() { return data.plan; },
+    set plan(v: Plan) { data.plan = v; },
+    get tokens() { return data.tokens; },
+    set tokens(v: SessionTokens | undefined) { data.tokens = v; },
     async save() {
       const encoded = encodePayload(data, secret);
-      res.setHeader(
-        "Set-Cookie",
-        serializeCookie(COOKIE_NAME, encoded, COOKIE_MAX_AGE)
-      );
+      res.setHeader("Set-Cookie", serializeCookie(COOKIE_NAME, encoded, COOKIE_MAX_AGE));
     },
     async destroy() {
       res.setHeader("Set-Cookie", serializeCookie(COOKIE_NAME, "", 0));
     },
   };
 }
+
+export type { SessionTokens, SessionShape, Plan };
