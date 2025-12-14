@@ -1,42 +1,56 @@
+// pages/api/ai/generatePost.ts
 import type { NextApiRequest, NextApiResponse } from "next";
-import OpenAI from "openai";
 
-// ENV: OPENAI_API_KEY mora da postoji
-const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+/**
+ * AI generisanje bez SDK-a (čist fetch), da izbegnemo tip/SDK konflikte.
+ * ENV: OPENAI_API_KEY (obavezno)
+ */
+
+const OPENAI_URL = "https://api.openai.com/v1/chat/completions";
+const MODEL = "gpt-4o-mini"; // brz, jeftin, dobar kvalitet za tekst
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  if (req.method !== "POST") {
-    res.setHeader("Allow", "POST");
-    return res.status(405).json({ error: "Method Not Allowed" });
-  }
-
   try {
-    const { businessType, locale, specials } = req.body || {};
-    const lang = typeof locale === "string" ? locale : "en";
+    if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
+    const apiKey = (process.env.OPENAI_API_KEY || "").trim();
+    if (!apiKey) return res.status(500).json({ error: "Missing OPENAI_API_KEY" });
 
-    const prompt = [
-      `You are BizPilot, an AI Google Business Manager.`,
-      `Generate ONE concise Google Business Profile post (max 700 characters) in ${lang}.`,
-      `Business type: ${businessType || "general small business"}.`,
-      specials ? `Promotions/specials to mention: ${specials}.` : "",
-      `Include a short call-to-action and relevant emojis sparingly.`,
-      `Return ONLY raw post text, no markdown, no prefixes.`
-    ].filter(Boolean).join("\n");
+    const { purpose, businessType, reviewText, starRating, languageHint } = req.body || {};
 
-    const r = await client.chat.completions.create({
-      model: "gpt-4o-mini",
-      temperature: 0.7,
-      messages: [
-        { role: "system", content: "You write polished, local-business-friendly posts for Google Business."},
-        { role: "user", content: prompt }
-      ]
+    const prompt =
+      purpose === "review-reply"
+        ? `You are a business profile manager. Write a short, polite and helpful reply to a customer review.
+Business type: ${businessType || "local business"}.
+Star rating: ${starRating || "N/A"}.
+Review text: """${(reviewText || "").slice(0, 2000)}"""
+Write the reply in the same language as the review.`
+        : `You are a business profile manager. Draft a concise Google Business Profile post (max 80 words) for a ${businessType || "local business"}.
+No hashtags, no emojis unless natural. Include a clear call-to-action. Language: ${languageHint || "English"}.`;
+
+    const r = await fetch(OPENAI_URL, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: MODEL,
+        messages: [
+          { role: "system", content: "You manage Google Business Profiles and write succinct, helpful text." },
+          { role: "user", content: prompt },
+        ],
+        temperature: 0.7,
+      }),
     });
 
-    const text = r.choices?.[0]?.message?.content?.trim() || "";
-    if (!text) return res.status(500).json({ error: "No text from model" });
+    const j = await r.json();
+    if (!r.ok) {
+      return res.status(500).json({ error: "openai failed", message: j?.error?.message || "unknown" });
+    }
 
-    return res.status(200).json({ ok: true, post: text });
+    const text = j?.choices?.[0]?.message?.content || "";
+    return res.status(200).json({ ok: true, text });
   } catch (e: any) {
-    return res.status(500).json({ ok: false, error: e?.message || "failed" });
+    return res.status(500).json({ error: "ai failed", message: e?.message || String(e) });
   }
 }
