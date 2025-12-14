@@ -1,22 +1,62 @@
 // utils/session.ts
 import type { NextApiRequest, NextApiResponse } from "next";
+import crypto from "crypto";
 
-export type Plan = "free" | "pro";
+/**
+ * Minimalna, sigurna cookie-sesija bez dodatnih paketa.
+ * Potrebno: SESSION_SECRET (>=32 char) u Vercel env.
+ * Cookie: bp_sess (signed, base64)
+ */
 
-export type SessionTokens =
-  | { access_token: string; refresh_token?: string; expiry_date?: number }
-  | undefined;
+export type Plan = "free" | "pro" | null;
 
-export type SessionShape = {
-  email?: string | null;
-  plan?: Plan;
-  tokens?: SessionTokens;
+export type SessionTokens = {
+  access_token?: string;
+  refresh_token?: string;
+  scope?: string;
+  expiry_date?: number;
+  token_type?: string;
 };
 
-const COOKIE_NAME = "bizpilot_session";
-const ONE_YEAR = 60 * 60 * 24 * 365;
+type SessionShape = {
+  email: string | null;
+  plan: Plan;
+  tokens?: SessionTokens | undefined;
+};
 
-function parseCookie(header?: string | null): Record<string, string> {
+const COOKIE_NAME = "bp_sess";
+const COOKIE_MAX_AGE = 60 * 60 * 24 * 60; // ~60 dana
+
+function getSecret(): Buffer {
+  const s = (process.env.SESSION_SECRET || "").trim();
+  if (s.length < 32) {
+    throw new Error("SESSION_SECRET must be at least 32 characters");
+  }
+  return Buffer.from(s, "utf8");
+}
+
+function sign(data: string, secret: Buffer) {
+  return crypto.createHmac("sha256", secret).update(data).digest("base64url");
+}
+
+function serializeCookie(name: string, value: string, maxAge: number) {
+  const parts = [
+    `${name}=${value}`,
+    "Path=/",
+    "HttpOnly",
+    "SameSite=Lax",
+  ];
+  // Ako je deploy na https domaini – Vercel production: Secure
+  parts.push("Secure");
+  if (maxAge > 0) {
+    parts.push(`Max-Age=${maxAge}`);
+  } else {
+    // session cookie
+  }
+  return parts.join("; ");
+}
+
+function parseCookie(header: string | undefined): Record<string, string> {
   const out: Record<string, string> = {};
   if (!header) return out;
   header.split(";").forEach((p) => {
@@ -24,57 +64,78 @@ function parseCookie(header?: string | null): Record<string, string> {
     if (i > -1) {
       const k = p.slice(0, i).trim();
       const v = p.slice(i + 1).trim();
-      out[k] = decodeURIComponent(v);
+      out[k] = v;
     }
   });
   return out;
 }
 
-function readSessionFromCookie(req: NextApiRequest): SessionShape {
-  try {
-    const cookies = parseCookie(req.headers?.cookie || "");
-    const raw = cookies[COOKIE_NAME];
-    if (!raw) return { plan: "free" };
-    const json = Buffer.from(raw, "base64").toString("utf8");
-    const data = JSON.parse(json);
-    return {
-      email: typeof data?.email === "string" ? data.email : null,
-      plan: (data?.plan === "pro" ? "pro" : "free") as Plan,
-      tokens: data?.tokens && typeof data.tokens === "object" ? data.tokens : undefined,
-    };
-  } catch {
-    return { plan: "free" };
-  }
+function encodePayload(obj: SessionShape, secret: Buffer): string {
+  const json = JSON.stringify(obj);
+  const payload = Buffer.from(json, "utf8").toString("base64url");
+  const sig = sign(payload, secret);
+  return `${payload}.${sig}`;
 }
 
-function writeSessionCookie(res: NextApiResponse, s: SessionShape) {
-  const payload = {
-    email: s.email || null,
-    plan: s.plan || "free",
-    tokens: s.tokens || undefined,
-  };
-  const b64 = Buffer.from(JSON.stringify(payload), "utf8").toString("base64");
-  const cookie =
-    `${COOKIE_NAME}=${encodeURIComponent(b64)}; ` +
-    `Path=/; HttpOnly; SameSite=Lax; Secure; Max-Age=${ONE_YEAR}`;
-  const prev = res.getHeader("Set-Cookie");
-  if (!prev) {
-    res.setHeader("Set-Cookie", cookie);
-  } else if (Array.isArray(prev)) {
-    res.setHeader("Set-Cookie", [...prev, cookie]);
-  } else {
-    res.setHeader("Set-Cookie", [String(prev), cookie]);
+function decodePayload(value: string, secret: Buffer): SessionShape | null {
+  const [payload, sig] = value.split(".");
+  if (!payload || !sig) return null;
+  const expected = sign(payload, secret);
+  if (!crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(expected))) {
+    return null;
+  }
+  try {
+    const json = Buffer.from(payload, "base64url").toString("utf8");
+    const obj = JSON.parse(json);
+    return {
+      email: obj?.email ?? null,
+      plan: (obj?.plan ?? "free") as Plan,
+      tokens: obj?.tokens,
+    };
+  } catch {
+    return null;
   }
 }
 
 export async function session(req: NextApiRequest, res: NextApiResponse) {
-  const state: SessionShape = readSessionFromCookie(req);
-  if (!state.plan) state.plan = "free";
+  const secret = getSecret();
+  const cookies = parseCookie(req.headers.cookie);
+  const raw = cookies[COOKIE_NAME];
+  let data: SessionShape = { email: null, plan: "free" };
+
+  if (raw) {
+    const dec = decodePayload(raw, secret);
+    if (dec) data = dec;
+  }
 
   return {
-    ...state,
-    async save() {
-      writeSessionCookie(res, this as SessionShape);
+    get email() {
+      return data.email;
     },
-  } as SessionShape & { save: () => Promise<void> };
+    set email(v: string | null) {
+      data.email = v;
+    },
+    get plan() {
+      return data.plan;
+    },
+    set plan(v: Plan) {
+      data.plan = v;
+    },
+    get tokens() {
+      return data.tokens;
+    },
+    set tokens(v: SessionTokens | undefined) {
+      data.tokens = v;
+    },
+    async save() {
+      const encoded = encodePayload(data, secret);
+      res.setHeader(
+        "Set-Cookie",
+        serializeCookie(COOKIE_NAME, encoded, COOKIE_MAX_AGE)
+      );
+    },
+    async destroy() {
+      res.setHeader("Set-Cookie", serializeCookie(COOKIE_NAME, "", 0));
+    },
+  };
 }
