@@ -1,44 +1,56 @@
+// pages/index.tsx
+import Head from "next/head";
 import Link from "next/link";
 
 export default function Home() {
   return (
-    <div className="container">
-      <div className="nav">
-        <div className="brand">🤖 BizPilot <span className="badge">needAI.help</span></div>
-        <div style={{display:"flex", gap:12}}>
-          <Link className="btn-outline" href="/pricing">Pricing</Link>
-          <a className="btn" href="/api/auth/google">Connect Google Business</a>
-        </div>
-      </div>
+    <>
+      <Head>
+        <title>needAI.help — BizPilot</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+      </Head>
+      <main className="min-h-screen bg-slate-950 text-slate-100">
+        <header className="max-w-5xl mx-auto px-6 py-6 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            {/* Logo privremeno tekstualno; posle ubaci SVG */}
+            <span className="text-xl font-extrabold">
+              need<span className="text-teal-300">AI</span>.help
+            </span>
+          </div>
+          <nav className="flex items-center gap-4">
+            <Link href="/pricing" className="text-slate-300 hover:text-white">Pricing</Link>
+            <a href="/api/auth/google" className="px-3 py-1.5 rounded-md bg-white/10 hover:bg-white/20">Connect Google Business</a>
+          </nav>
+        </header>
 
-      <div className="hero">
-        <div className="card">
-          <h1 className="h1">Your AI Google Business Manager.</h1>
-          <p className="sub">Automate posts, craft replies, and optimize your profile in any language. Free plan to try. Pro is just €30/month with 14-day trial.</p>
-          <div style={{display:"flex", gap:12}}>
-            <a className="btn" href="/api/auth/google">Start Free</a>
-            <Link className="btn-outline" href="/dashboard">Open Dashboard</Link>
+        <section className="max-w-5xl mx-auto px-6 py-16">
+          <h1 className="text-4xl md:text-5xl font-extrabold leading-tight">
+            Autonomous Google Business Manager, powered by AI.
+          </h1>
+          <p className="mt-4 text-slate-300">
+            BizPilot automatski priprema postove, odgovara na recenzije i pomaže oko informacija — na svim jezicima.
+          </p>
+
+          <div className="mt-8 flex flex-wrap gap-3">
+            <a
+              href="/api/auth/google?plan=free"
+              className="px-5 py-3 rounded-lg bg-teal-500 text-slate-900 font-semibold hover:bg-teal-400"
+            >
+              Start Free
+            </a>
+            <a
+              href="/api/stripe/createCheckout"
+              className="px-5 py-3 rounded-lg bg-white/10 text-white hover:bg-white/20"
+            >
+              Start 14-day Trial — €29.99/mo
+            </a>
           </div>
-          <div className="kv">
-            <div>🌍 All languages</div><div>🛡️ Privacy-first</div>
-            <div>⚡ Quick setup</div><div>🧠 AI-generated content</div>
-          </div>
-        </div>
-        <div className="card">
-          <h3>What it does</h3>
-          <table className="table">
-            <tbody>
-              <tr><td>Connect Google Business</td><td>✓</td></tr>
-              <tr><td>List accounts & locations</td><td>✓</td></tr>
-              <tr><td>AI post generator (draft)</td><td>✓ Free</td></tr>
-              <tr><td>AI review replies (draft)</td><td>✓ Free</td></tr>
-              <tr><td>1-click publish</td><td>Pro</td></tr>
-            </tbody>
-          </table>
-          <p className="notice">Note: Direct publishing requires Google API access approvals. Drafts are available instantly.</p>
-        </div>
-      </div>
-      <div className="footer">© {new Date().getFullYear()} needAI.help — BizPilot</div>
-    </div>
+
+          <p className="mt-3 text-sm text-slate-400">
+            Free plan za testiranje. Pro plan €29.99 / month (14 dana trial).
+          </p>
+        </section>
+      </main>
+    </>
   );
 }
