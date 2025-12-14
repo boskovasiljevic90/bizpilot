@@ -1,42 +1,34 @@
+// pages/api/auth/callback.ts
 import type { NextApiRequest, NextApiResponse } from "next";
-import { oauthClient } from "@/utils/google";
+import { google } from "googleapis";
 import { session } from "@/utils/session";
-import type { SessionTokens } from "@/utils/types";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   try {
-    const code = req.query.code as string;
+    const code = (req.query.code as string) || "";
     if (!code) return res.status(400).json({ error: "Missing code" });
 
-    const client = oauthClient(req);
-    const { tokens } = await client.getToken(code);
-    if (!tokens?.access_token) return res.status(502).json({ error: "Token exchange failed" });
+    const clientId = process.env.GOOGLE_CLIENT_ID as string;
+    const clientSecret = process.env.GOOGLE_CLIENT_SECRET as string;
+    const base = process.env.NEXT_PUBLIC_BASE_URL || `https://${req.headers.host}`;
+    const redirectUri = `${base}/api/auth/callback`;
 
-    let email: string | null = null;
-    try {
-      const idt = tokens.id_token as string | undefined;
-      if (idt) {
-        const payload = JSON.parse(Buffer.from(idt.split(".")[1], "base64").toString());
-        email = payload?.email || null;
-      }
-    } catch {}
+    const oauth2Client = new google.auth.OAuth2(clientId, clientSecret, redirectUri);
 
-    const slim: SessionTokens = {
-      access_token: tokens.access_token || null,
-      refresh_token: tokens.refresh_token || null,
-      expiry_date: tokens.expiry_date || null,
-      scope: tokens.scope || null,
-      token_type: tokens.token_type || "Bearer",
-    };
+    const { tokens } = await oauth2Client.getToken(code);
+    oauth2Client.setCredentials(tokens);
+
+    const oidc = google.oauth2({ version: "v2", auth: oauth2Client });
+    const me = await oidc.userinfo.get();
+    const email = me.data.email || null;
 
     const s = await session(req, res);
-    s.tokens = slim;
     s.email = email;
-    if (!s.plan) s.plan = "free";
+    s.tokens = tokens as any;
     await s.save();
 
     res.redirect(302, "/dashboard");
-  } catch (e:any) {
-    res.status(500).json({ error: "auth/callback crashed", message: e?.message || String(e) });
+  } catch (e: any) {
+    res.status(500).json({ error: "callback failed", message: e?.message || String(e) });
   }
 }
