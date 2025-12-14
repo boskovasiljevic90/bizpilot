@@ -1,22 +1,41 @@
+// utils/stripe.ts
 import Stripe from "stripe";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string, { apiVersion: "2024-06-20" });
+// Klijent bez apiVersion override-a (koristi paketovu verziju)
+export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string);
 
+/** Opcionalno: brz sanity-check env varijabli za Stripe */
+export function checkStripeEnv() {
+  return {
+    STRIPE_SECRET_KEY: !!process.env.STRIPE_SECRET_KEY,
+    STRIPE_PRICE_ID: !!process.env.STRIPE_PRICE_ID,
+    STRIPE_WEBHOOK_SECRET: !!process.env.STRIPE_WEBHOOK_SECRET,
+  };
+}
+
+/** Vrati prvog kupca sa tim email-om (ako postoji) */
 export async function getCustomerByEmail(email: string) {
   const list = await stripe.customers.list({ email, limit: 1 });
   return list.data[0] || null;
 }
 
-export async function ensureCustomer(email: string) {
+/** Osiguraj da postoji Customer (kreiraj ako ne postoji) */
+export async function ensureCustomer(email?: string | null) {
+  if (!email) return null;
   const existing = await getCustomerByEmail(email);
   if (existing) return existing;
   return stripe.customers.create({ email });
 }
 
-export async function getActiveSubscriptionStatus(email: string): Promise<{ active: boolean; current_period_end?: number | null }> {
-  const customer = await getCustomerByEmail(email);
-  if (!customer) return { active: false };
-  const subs = await stripe.subscriptions.list({ customer: customer.id, status: "all", limit: 3 });
-  const sub = subs.data.find(s => ["active", "trialing", "past_due"].includes(s.status));
-  return { active: !!sub, current_period_end: sub?.current_period_end || null };
+/** Uzmi aktivnu (ili trial) pretplatu za kupca — ako ti zatreba */
+export async function getActiveSubscriptionByCustomer(customerId: string) {
+  const subs = await stripe.subscriptions.list({
+    customer: customerId,
+    status: "all",
+    limit: 10,
+    expand: ["data.default_payment_method"],
+  });
+  return subs.data.find(s =>
+    ["trialing", "active", "past_due", "unpaid"].includes(s.status)
+  ) || null;
 }
