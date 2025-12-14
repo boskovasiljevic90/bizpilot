@@ -1,10 +1,10 @@
 // utils/stripe.ts
 import Stripe from "stripe";
 
-// Klijent bez apiVersion override-a (koristi paketovu verziju)
+// Stripe klijent bez apiVersion override-a (koristi verziju iz paketa)
 export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string);
 
-/** Opcionalno: brz sanity-check env varijabli za Stripe */
+/** Brz sanity-check env varijabli za Stripe */
 export function checkStripeEnv() {
   return {
     STRIPE_SECRET_KEY: !!process.env.STRIPE_SECRET_KEY,
@@ -27,7 +27,7 @@ export async function ensureCustomer(email?: string | null) {
   return stripe.customers.create({ email });
 }
 
-/** Uzmi aktivnu (ili trial) pretplatu za kupca — ako ti zatreba */
+/** Uzmi aktivnu (ili trial) pretplatu za kupca (ako postoji) */
 export async function getActiveSubscriptionByCustomer(customerId: string) {
   const subs = await stripe.subscriptions.list({
     customer: customerId,
@@ -35,7 +35,18 @@ export async function getActiveSubscriptionByCustomer(customerId: string) {
     limit: 10,
     expand: ["data.default_payment_method"],
   });
-  return subs.data.find(s =>
-    ["trialing", "active", "past_due", "unpaid"].includes(s.status)
-  ) || null;
+  return (
+    subs.data.find((s) =>
+      ["trialing", "active", "past_due", "unpaid"].includes(s.status)
+    ) || null
+  );
+}
+
+/** >>> NOVO: status pretplate za email (koristi se u whoami) */
+export async function getActiveSubscriptionStatus(email?: string | null) {
+  if (!email) return null;
+  const customer = await ensureCustomer(email);
+  if (!customer) return null;
+  const sub = await getActiveSubscriptionByCustomer(customer.id);
+  return sub?.status ?? null;
 }
