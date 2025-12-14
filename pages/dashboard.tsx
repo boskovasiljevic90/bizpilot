@@ -1,308 +1,194 @@
-// pages/dashboard.tsx
-import Head from "next/head";
-import Link from "next/link";
 import { useEffect, useState } from "react";
 
-type Settings = {
-  enabled: boolean;
-  frequency: "daily" | "weekly";
-  businessType: string;
-  locale: string;
+type Who = {
+  loggedIn: boolean;
+  email?: string;
+  plan?: "free" | "pro" | null;
 };
 
-type QueueItem = { ts: number; type: "post" | "reply"; text: string };
-
 export default function Dashboard() {
-  // AI buttons (postojeći MVP)
-  const [postLoading, setPostLoading] = useState(false);
-  const [replyLoading, setReplyLoading] = useState(false);
+  const [who, setWho] = useState<Who>({ loggedIn: false });
+  const [loadingPost, setLoadingPost] = useState(false);
+  const [loadingReply, setLoadingReply] = useState(false);
   const [postText, setPostText] = useState("");
   const [replyText, setReplyText] = useState("");
-  const [postTopic, setPostTopic] = useState("special offer this week");
-  const [reviewSample, setReviewSample] = useState("We loved the cappuccino and the staff were super friendly!");
-
-  // Autopilot state
-  const [settings, setSettings] = useState<Settings>({
-    enabled: false,
-    frequency: "weekly",
-    businessType: "local business",
-    locale: "en",
-  });
-  const [saving, setSaving] = useState(false);
-  const [running, setRunning] = useState(false);
-  const [posts, setPosts] = useState<QueueItem[]>([]);
-  const [replies, setReplies] = useState<QueueItem[]>([]);
-
-  async function loadSettings() {
-    const r = await fetch("/api/autopilot/settings");
-    const j = await r.json();
-    if (j?.ok) setSettings(j.settings);
-  }
-  async function saveSettings(next: Partial<Settings>) {
-    setSaving(true);
-    const r = await fetch("/api/autopilot/settings", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(next),
-    });
-    const j = await r.json();
-    if (j?.ok) setSettings(j.settings);
-    setSaving(false);
-  }
-  async function loadQueue() {
-    const r = await fetch("/api/autopilot/queue");
-    const j = await r.json();
-    if (j?.ok) {
-      setPosts(j.posts);
-      setReplies(j.replies);
-    }
-  }
-  async function runNow() {
-    setRunning(true);
-    const r = await fetch("/api/cron/run", { method: "POST" });
-    await r.json().catch(() => ({}));
-    setRunning(false);
-    loadQueue();
-  }
+  const [reviewInput, setReviewInput] = useState("");
+  const [ratingInput, setRatingInput] = useState<number | undefined>(5);
+  const [locale, setLocale] = useState("en");
+  const [bizType, setBizType] = useState("");
+  const [specials, setSpecials] = useState("");
 
   useEffect(() => {
-    loadSettings();
-    loadQueue();
+    // minimal whoami (možeš zadržati postojeći /api/auth/whoami ako već ima)
+    fetch("/api/auth/whoami")
+      .then(r => r.json())
+      .then(d => {
+        setWho({
+          loggedIn: !!d?.loggedIn,
+          email: d?.email || undefined,
+          plan: d?.plan || null
+        });
+      })
+      .catch(() => setWho({ loggedIn: false }));
   }, []);
 
   async function handleGeneratePost() {
+    setLoadingPost(true);
+    setPostText("");
     try {
-      setPostLoading(true);
-      setPostText("");
-      const r = await fetch("/api/ai/postDraft", {
+      const r = await fetch("/api/ai/generatePost", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title: postTopic }),
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ businessType: bizType || undefined, locale, specials: specials || undefined })
       });
       const j = await r.json();
-      if (j?.error) throw new Error(j.error);
-      setPostText(j?.text || "");
+      if (!r.ok) throw new Error(j?.error || "failed");
+      setPostText(j.post || "");
     } catch (e: any) {
-      setPostText(`Error: ${e?.message || String(e)}`);
+      setPostText(`Error: ${e?.message || "failed"}`);
     } finally {
-      setPostLoading(false);
+      setLoadingPost(false);
     }
   }
 
   async function handleGenerateReply() {
+    if (!reviewInput?.trim()) {
+      setReplyText("Please paste a customer review first.");
+      return;
+    }
+    setLoadingReply(true);
+    setReplyText("");
     try {
-      setReplyLoading(true);
-      setReplyText("");
-      const r = await fetch("/api/ai/replyDraft", {
+      const r = await fetch("/api/ai/respondReview", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ review: reviewSample }),
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          reviewText: reviewInput,
+          rating: typeof ratingInput === "number" ? ratingInput : undefined,
+          locale
+        })
       });
       const j = await r.json();
-      if (j?.error) throw new Error(j.error);
-      setReplyText(j?.text || "");
+      if (!r.ok) throw new Error(j?.error || "failed");
+      setReplyText(j.reply || "");
     } catch (e: any) {
-      setReplyText(`Error: ${e?.message || String(e)}`);
+      setReplyText(`Error: ${e?.message || "failed"}`);
     } finally {
-      setReplyLoading(false);
+      setLoadingReply(false);
     }
   }
 
   return (
-    <>
-      <Head>
-        <title>Dashboard — BizPilot</title>
-      </Head>
-      <main className="min-h-screen bg-slate-950 text-slate-100">
-        <header className="max-w-5xl mx-auto px-6 py-6 flex items-center justify-between">
-          <div className="text-xl font-extrabold">
-            need<span className="text-teal-300">AI</span>.help
+    <div style={{ padding: 24, maxWidth: 900, margin: "0 auto", fontFamily: "ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto" }}>
+      <header style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
+        <img src="/needai-help_icon.svg" alt="needAI help" width={36} height={36} />
+        <h1 style={{ fontSize: 24, margin: 0 }}>BizPilot Dashboard</h1>
+        <div style={{ marginLeft: "auto", fontSize: 14, opacity: 0.8 }}>
+          {who.loggedIn ? (<>Signed in{who.email ? `: ${who.email}` : ""} • Plan: {who.plan || "free"}</>) : "Not signed in"}
+        </div>
+      </header>
+
+      <section style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24 }}>
+        {/* Generate Post */}
+        <div style={{ border: "1px solid #e5e7eb", borderRadius: 12, padding: 16 }}>
+          <h2 style={{ marginTop: 0 }}>Generate Google Business Post</h2>
+          <div style={{ display: "grid", gap: 8 }}>
+            <label>
+              Locale (language code)
+              <input
+                value={locale}
+                onChange={e => setLocale(e.target.value)}
+                placeholder="en, de, fr, sr, es..."
+                style={{ width: "100%", padding: 8, border: "1px solid #e5e7eb", borderRadius: 8 }}
+              />
+            </label>
+            <label>
+              Business type (optional)
+              <input
+                value={bizType}
+                onChange={e => setBizType(e.target.value)}
+                placeholder="e.g. restaurant, hair salon"
+                style={{ width: "100%", padding: 8, border: "1px solid #e5e7eb", borderRadius: 8 }}
+              />
+            </label>
+            <label>
+              Specials/promotions (optional)
+              <input
+                value={specials}
+                onChange={e => setSpecials(e.target.value)}
+                placeholder="e.g. -10% today, free delivery"
+                style={{ width: "100%", padding: 8, border: "1px solid #e5e7eb", borderRadius: 8 }}
+              />
+            </label>
+            <button
+              onClick={handleGeneratePost}
+              disabled={loadingPost}
+              style={{ padding: "10px 14px", borderRadius: 10, border: "1px solid #111", background: "#111", color: "#fff", cursor: "pointer" }}
+            >
+              {loadingPost ? "Generating..." : "Generate Post"}
+            </button>
+            <textarea
+              value={postText}
+              readOnly
+              placeholder="Generated post will appear here..."
+              style={{ width: "100%", minHeight: 140, padding: 10, border: "1px solid #e5e7eb", borderRadius: 8 }}
+            />
           </div>
-          <nav className="flex items-center gap-3">
-            <Link href="/" className="text-slate-300 hover:text-white">Home</Link>
-            <Link href="/pricing" className="text-slate-300 hover:text-white">Pricing</Link>
-          </nav>
-        </header>
+        </div>
 
-        <section className="max-w-5xl mx-auto px-6 py-10">
-          <h1 className="text-3xl font-bold mb-2">Dashboard</h1>
-          <p className="text-slate-300 mb-6">Connect Google Business and use AI actions.</p>
-
-          {/* SUBSCRIPTION + CONNECT */}
-          <div className="grid md:grid-cols-2 gap-6">
-            <div className="rounded-2xl border border-white/10 p-6">
-              <h2 className="font-bold mb-2">Google Business</h2>
-              <p className="text-sm text-slate-400 mb-4">If you’re not connected, click below.</p>
-              <a href="/api/auth/google" className="px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 inline-block">
-                Connect / Reconnect
-              </a>
-            </div>
-
-            <div className="rounded-2xl border border-white/10 p-6">
-              <h2 className="font-bold mb-2">Subscription</h2>
-              <p className="text-sm text-slate-400">Free or Pro (€29.99/mo, 14-day trial)</p>
-              <div className="mt-4 flex gap-3">
-                <a href="/api/auth/google?plan=free" className="px-4 py-2 rounded-lg bg-teal-500 text-slate-900 hover:bg-teal-400">Use Free</a>
-                <a href="/api/stripe/createCheckout" className="px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20">Start Trial</a>
-              </div>
-            </div>
+        {/* Reply to Review */}
+        <div style={{ border: "1px solid #e5e7eb", borderRadius: 12, padding: 16 }}>
+          <h2 style={{ marginTop: 0 }}>Reply to Customer Review</h2>
+          <div style={{ display: "grid", gap: 8 }}>
+            <label>
+              Locale (language code)
+              <input
+                value={locale}
+                onChange={e => setLocale(e.target.value)}
+                placeholder="en, de, fr, sr, es..."
+                style={{ width: "100%", padding: 8, border: "1px solid #e5e7eb", borderRadius: 8 }}
+              />
+            </label>
+            <label>
+              Rating (optional, 1-5)
+              <input
+                type="number"
+                min={1}
+                max={5}
+                value={ratingInput ?? 5}
+                onChange={e => setRatingInput(Number(e.target.value))}
+                style={{ width: "100%", padding: 8, border: "1px solid #e5e7eb", borderRadius: 8 }}
+              />
+            </label>
+            <label>
+              Paste customer review
+              <textarea
+                value={reviewInput}
+                onChange={e => setReviewInput(e.target.value)}
+                placeholder="Paste the customer's review text here"
+                style={{ width: "100%", minHeight: 100, padding: 10, border: "1px solid #e5e7eb", borderRadius: 8 }}
+              />
+            </label>
+            <button
+              onClick={handleGenerateReply}
+              disabled={loadingReply}
+              style={{ padding: "10px 14px", borderRadius: 10, border: "1px solid #111", background: "#111", color: "#fff", cursor: "pointer" }}
+            >
+              {loadingReply ? "Generating..." : "Generate Reply"}
+            </button>
+            <textarea
+              value={replyText}
+              readOnly
+              placeholder="AI reply will appear here..."
+              style={{ width: "100%", minHeight: 140, padding: 10, border: "1px solid #e5e7eb", borderRadius: 8 }}
+            />
           </div>
+        </div>
+      </section>
 
-          {/* AI ACTIONS (manual) */}
-          <div className="mt-10 rounded-2xl border border-white/10 p-6">
-            <h2 className="font-bold mb-2">AI actions (manual drafts)</h2>
-            <p className="text-sm text-slate-400 mb-4">Generate drafts you can copy.</p>
-
-            <div className="grid md:grid-cols-2 gap-4">
-              <div>
-                <label className="text-sm text-slate-400">Post topic</label>
-                <input
-                  className="mt-2 w-full bg-slate-900/60 border border-white/10 rounded-lg p-3"
-                  value={postTopic}
-                  onChange={(e) => setPostTopic(e.target.value)}
-                />
-              </div>
-              <div>
-                <label className="text-sm text-slate-400">Sample review</label>
-                <input
-                  className="mt-2 w-full bg-slate-900/60 border border-white/10 rounded-lg p-3"
-                  value={reviewSample}
-                  onChange={(e) => setReviewSample(e.target.value)}
-                />
-              </div>
-            </div>
-
-            <div className="flex flex-wrap gap-3 mt-4">
-              <button
-                onClick={handleGeneratePost}
-                disabled={postLoading}
-                className="px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 disabled:opacity-50"
-              >
-                {postLoading ? "Generating Post..." : "Generate Post (Draft)"}
-              </button>
-              <button
-                onClick={handleGenerateReply}
-                disabled={replyLoading}
-                className="px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 disabled:opacity-50"
-              >
-                {replyLoading ? "Generating Reply..." : "Generate Review Reply (Draft)"}
-              </button>
-            </div>
-
-            <div className="grid md:grid-cols-2 gap-4 mt-4">
-              <div>
-                <label className="text-sm text-slate-400">Post Draft</label>
-                <textarea
-                  className="mt-2 w-full h-48 bg-slate-900/60 border border-white/10 rounded-lg p-3"
-                  value={postText}
-                  onChange={(e) => setPostText(e.target.value)}
-                />
-              </div>
-              <div>
-                <label className="text-sm text-slate-400">Review Reply Draft</label>
-                <textarea
-                  className="mt-2 w-full h-48 bg-slate-900/60 border border-white/10 rounded-lg p-3"
-                  value={replyText}
-                  onChange={(e) => setReplyText(e.target.value)}
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* AUTOPILOT */}
-          <div className="mt-10 rounded-2xl border border-emerald-500/30 p-6">
-            <h2 className="font-bold mb-2">Autopilot</h2>
-            <p className="text-sm text-slate-400 mb-4">
-              When enabled, BizPilot generates scheduled drafts (posts & review replies) and stores them below.
-            </p>
-
-            <div className="grid md:grid-cols-4 gap-3 items-end">
-              <label className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  checked={settings.enabled}
-                  onChange={(e) => saveSettings({ enabled: e.target.checked })}
-                />
-                <span>Enabled</span>
-              </label>
-
-              <div>
-                <div className="text-sm text-slate-400">Frequency</div>
-                <select
-                  className="mt-2 w-full bg-slate-900/60 border border-white/10 rounded-lg p-2"
-                  value={settings.frequency}
-                  onChange={(e) => saveSettings({ frequency: e.target.value as any })}
-                >
-                  <option value="daily">Daily</option>
-                  <option value="weekly">Weekly</option>
-                </select>
-              </div>
-
-              <div>
-                <div className="text-sm text-slate-400">Business type</div>
-                <input
-                  className="mt-2 w-full bg-slate-900/60 border border-white/10 rounded-lg p-2"
-                  value={settings.businessType}
-                  onChange={(e) => saveSettings({ businessType: e.target.value })}
-                />
-              </div>
-
-              <div>
-                <div className="text-sm text-slate-400">Language</div>
-                <input
-                  className="mt-2 w-full bg-slate-900/60 border border-white/10 rounded-lg p-2"
-                  value={settings.locale}
-                  onChange={(e) => saveSettings({ locale: e.target.value })}
-                />
-              </div>
-            </div>
-
-            <div className="mt-4 flex gap-3">
-              <button
-                onClick={runNow}
-                disabled={running}
-                className="px-4 py-2 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 disabled:opacity-50"
-              >
-                {running ? "Running..." : "Run Autopilot now"}
-              </button>
-              <button
-                onClick={loadQueue}
-                className="px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20"
-              >
-                Refresh queue
-              </button>
-              {saving && <span className="text-slate-400 text-sm">Saving…</span>}
-            </div>
-
-            <div className="grid md:grid-cols-2 gap-4 mt-6">
-              <div>
-                <h3 className="font-semibold mb-2">Generated Posts</h3>
-                <div className="space-y-3">
-                  {posts.map((p, i) => (
-                    <div key={i} className="p-3 rounded-lg bg-slate-900/60 border border-white/10">
-                      <div className="text-xs text-slate-400 mb-1">{new Date(p.ts).toLocaleString()}</div>
-                      <div className="whitespace-pre-wrap">{p.text}</div>
-                    </div>
-                  ))}
-                  {posts.length === 0 && <div className="text-sm text-slate-400">No posts yet.</div>}
-                </div>
-              </div>
-              <div>
-                <h3 className="font-semibold mb-2">Generated Review Replies</h3>
-                <div className="space-y-3">
-                  {replies.map((p, i) => (
-                    <div key={i} className="p-3 rounded-lg bg-slate-900/60 border border-white/10">
-                      <div className="text-xs text-slate-400 mb-1">{new Date(p.ts).toLocaleString()}</div>
-                      <div className="whitespace-pre-wrap">{p.text}</div>
-                    </div>
-                  ))}
-                  {replies.length === 0 && <div className="text-sm text-slate-400">No replies yet.</div>}
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-      </main>
-    </>
+      <p style={{ marginTop: 24, fontSize: 13, opacity: 0.7 }}>
+        Note: Autopilot is handled by cron + KV. This page is your manual control.
+      </p>
+    </div>
   );
 }
