@@ -1,151 +1,75 @@
 // pages/dashboard.tsx
-import { useEffect, useState } from "react";
-
-type Opt = { value: string; label: string };
+import { useState } from "react";
 
 export default function Dashboard() {
-  const [status, setStatus] = useState<string>("Ready");
-  const [diag, setDiag] = useState<any>(null);
-
-  const [accounts, setAccounts] = useState<Opt[]>([]);
-  const [account, setAccount] = useState<string>("");
-
-  const [locations, setLocations] = useState<Opt[]>([]);
-  const [location, setLocation] = useState<string>("");
-
-  async function callJSON(url: string) {
-    setStatus(`Calling ${url} ...`);
-    const r = await fetch(url);
-    const js = await r.json().catch(() => ({}));
-    setDiag({ url, status: r.status, payload: js });
-    return { ok: r.ok, js };
-  }
-
-  async function onConnect() {
-    window.location.href = "/api/auth/google";
-  }
-
-  async function onLoadAccounts() {
-    const { ok, js } = await callJSON("/api/gbp/accounts");
-    if (!ok) return;
-    if (!js?.accounts?.length) {
-      setStatus("No accounts returned");
-      setAccounts([]);
-      setAccount("");
-      return;
-    }
-    const opts = js.accounts.map((a: any) => ({
-      value: a.name, // "accounts/XXXX"
-      label: a.accountName || a.name,
-    }));
-    setAccounts(opts);
-    setAccount(opts[0].value);
-    setStatus(`Loaded ${opts.length} account(s)`);
-  }
-
-  async function onLoadLocations() {
-    if (!account) {
-      setStatus("Select account first");
-      return;
-    }
-    const { ok, js } = await callJSON(`/api/gbp/locations?account=${encodeURIComponent(account)}`);
-    if (!ok) return;
-    const opts = (js.locations || []).map((l: any) => ({
-      value: l.name, // "locations/XXXX"
-      label: l.title || l.name,
-    }));
-    setLocations(opts);
-    setLocation(opts[0]?.value || "");
-    setStatus(`Loaded ${opts.length} location(s)`);
-  }
-
-  // maleni helper da se odmah vidi ko je ulogovan
-  async function checkWho() {
-    const r = await fetch("/api/auth/whoami");
-    const js = await r.json().catch(() => ({}));
-    setDiag((d: any) => ({ ...(d || {}), whoami: js }));
-  }
-
-  useEffect(() => {
-    checkWho();
-  }, []);
+  const [post, setPost] = useState("");
+  const [tone, setTone] = useState("friendly");
+  const [review, setReview] = useState("");
+  const [reply, setReply] = useState("");
 
   return (
-    <div style={{ padding: 20, maxWidth: 1000, margin: "0 auto", fontFamily: "ui-sans-serif, system-ui" }}>
-      <h1 style={{ fontSize: 28, fontWeight: 800, marginBottom: 12 }}>BizPilot Dashboard</h1>
-      <p style={{ marginBottom: 16, color: "#555" }}>
-        Connect → Load Accounts → Select Account → Load Locations → Select Location
-      </p>
-
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 12, marginBottom: 16 }}>
-        <button onClick={onConnect} style={btn}>Connect Google Business</button>
-        <button onClick={onLoadAccounts} style={btn}>Load Accounts</button>
-        <select
-          value={account}
-          onChange={(e) => setAccount(e.target.value)}
-          style={inp}
-        >
-          <option value="">Select account…</option>
-          {accounts.map((a) => (
-            <option key={a.value} value={a.value}>{a.label}</option>
-          ))}
-        </select>
-        <button onClick={onLoadLocations} style={btn}>Load Locations</button>
-      </div>
-
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 24 }}>
-        <div>
-          <label style={lbl}>Account</label>
-          <select value={account} onChange={(e) => setAccount(e.target.value)} style={inp}>
-            <option value="">Select account…</option>
-            {accounts.map((a) => (
-              <option key={a.value} value={a.value}>{a.label}</option>
-            ))}
-          </select>
+    <main className="min-h-screen bg-slate-950 text-slate-100">
+      <header className="max-w-5xl mx-auto px-6 py-6 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <span className="text-xl font-extrabold">
+            need<span className="text-teal-300">AI</span>.help
+          </span>
+          <span className="text-slate-400">BizPilot</span>
         </div>
-        <div>
-          <label style={lbl}>Location</label>
-          <select value={location} onChange={(e) => setLocation(e.target.value)} style={inp}>
-            <option value="">Select location…</option>
-            {locations.map((l) => (
-              <option key={l.value} value={l.value}>{l.label}</option>
-            ))}
+      </header>
+
+      <section className="max-w-5xl mx-auto px-6 py-8 grid md:grid-cols-2 gap-8">
+        <div className="rounded-2xl border border-white/10 p-6">
+          <h2 className="text-xl font-bold">Draft a social post</h2>
+          <textarea
+            value={post}
+            onChange={(e) => setPost(e.target.value)}
+            placeholder="What do you want to say? e.g. 'New 10% winter discount on car wash'"
+            className="mt-3 w-full h-32 bg-transparent rounded-lg border border-white/10 p-3"
+          />
+          <label className="mt-3 block text-sm text-slate-400">Tone</label>
+          <select
+            className="mt-1 w-full bg-transparent rounded-lg border border-white/10 p-2"
+            value={tone}
+            onChange={(e) => setTone(e.target.value)}
+          >
+            <option value="friendly">Friendly</option>
+            <option value="professional">Professional</option>
+            <option value="funny">Funny</option>
           </select>
+          <button
+            className="mt-4 px-4 py-2 rounded-lg bg-teal-500 text-slate-900 font-semibold hover:bg-teal-400"
+            onClick={() => alert(`(Demo) Drafting a ${tone} post:\n\n${post}`)}
+          >
+            Draft with AI (Demo)
+          </button>
         </div>
-      </div>
 
-      <div style={{ marginBottom: 12, fontSize: 13, color: "#444" }}>
-        <b>Status:</b> {status}
-      </div>
-
-      <div>
-        <label style={lbl}>Diagnostics (raw JSON)</label>
-        <textarea
-          readOnly
-          value={JSON.stringify(diag ?? {}, null, 2)}
-          style={{ width: "100%", height: 300, fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace", fontSize: 12, padding: 10, border: "1px solid #ddd", borderRadius: 8 }}
-        />
-      </div>
-    </div>
+        <div className="rounded-2xl border border-white/10 p-6">
+          <h2 className="text-xl font-bold">Reply to a review</h2>
+          <textarea
+            value={review}
+            onChange={(e) => setReview(e.target.value)}
+            placeholder="Paste a customer review here..."
+            className="mt-3 w-full h-32 bg-transparent rounded-lg border border-white/10 p-3"
+          />
+          <button
+            className="mt-4 px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20"
+            onClick={() =>
+              setReply(
+                `(Demo) Thanks for your review! We appreciate your feedback and hope to see you again soon.`
+              )
+            }
+          >
+            Suggest Reply
+          </button>
+          {reply && (
+            <pre className="mt-4 text-sm whitespace-pre-wrap bg-black/30 rounded-lg p-3 border border-white/10">
+              {reply}
+            </pre>
+          )}
+        </div>
+      </section>
+    </main>
   );
 }
-
-const btn: React.CSSProperties = {
-  background: "black",
-  color: "white",
-  border: "none",
-  borderRadius: 8,
-  padding: "10px 12px",
-  cursor: "pointer",
-  fontWeight: 600,
-};
-
-const inp: React.CSSProperties = {
-  width: "100%",
-  padding: "10px 12px",
-  borderRadius: 8,
-  border: "1px solid #ddd",
-  background: "white",
-};
-
-const lbl: React.CSSProperties = { display: "block", marginBottom: 6, fontWeight: 600 };
