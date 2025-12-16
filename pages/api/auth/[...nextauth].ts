@@ -3,6 +3,10 @@ import NextAuth, { NextAuthOptions } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 
 export const authOptions: NextAuthOptions = {
+  // Vercel + custom domen
+  trustHost: true,
+  secret: process.env.NEXTAUTH_SECRET,
+
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
@@ -22,8 +26,9 @@ export const authOptions: NextAuthOptions = {
       },
     }),
   ],
+
   session: { strategy: "jwt" },
-  secret: process.env.NEXTAUTH_SECRET, // MUST in production
+
   callbacks: {
     async jwt({ token, account }) {
       if (account?.access_token) token.accessToken = account.access_token;
@@ -35,6 +40,21 @@ export const authOptions: NextAuthOptions = {
       (session as any).accessToken = token.accessToken;
       (session as any).refreshToken = token.refreshToken;
       return session;
+    },
+  },
+
+  // Pomozite sebi prilikom debuga na Vercel logovima
+  logger: {
+    error(code, metadata) {
+      console.error("NEXTAUTH ERROR:", code, metadata);
+    },
+    warn(code) {
+      console.warn("NEXTAUTH WARN:", code);
+    },
+    debug(code, metadata) {
+      if (process.env.NODE_ENV !== "production") {
+        console.debug("NEXTAUTH DEBUG:", code, metadata);
+      }
     },
   },
 };
