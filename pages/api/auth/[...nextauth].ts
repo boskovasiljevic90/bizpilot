@@ -3,7 +3,6 @@ import NextAuth, { NextAuthOptions } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 
 export const authOptions: NextAuthOptions = {
-  // U v4 nema trustHost; oslanjamo se na NEXTAUTH_URL u env-u
   secret: process.env.NEXTAUTH_SECRET,
 
   providers: [
@@ -30,10 +29,32 @@ export const authOptions: NextAuthOptions = {
 
   callbacks: {
     async jwt({ token, account }) {
-      if (account?.access_token) token.accessToken = account.access_token;
-      if (account?.refresh_token) token.refreshToken = account.refresh_token;
-      if (account?.expires_at) token.accessTokenExpires = account.expires_at * 1000;
+      if (account?.access_token) (token as any).accessToken = account.access_token;
+      if (account?.refresh_token) (token as any).refreshToken = account.refresh_token;
+      if (account?.expires_at)  (token as any).accessTokenExpires = account.expires_at * 1000;
       return token;
     },
-    async session({ session, token }) {
-      (session as any).accessToken = token.accessToken;
+    // FIX: mora da VRATI session
+    session({ session, token }) {
+      (session as any).accessToken = (token as any).accessToken;
+      (session as any).refreshToken = (token as any).refreshToken;
+      return session;
+    },
+  },
+
+  logger: {
+    error(code, metadata) {
+      console.error("NEXTAUTH ERROR:", code, metadata);
+    },
+    warn(code) {
+      console.warn("NEXTAUTH WARN:", code);
+    },
+    debug(code, metadata) {
+      if (process.env.NODE_ENV !== "production") {
+        console.debug("NEXTAUTH DEBUG:", code, metadata);
+      }
+    },
+  },
+};
+
+export default NextAuth(authOptions);
