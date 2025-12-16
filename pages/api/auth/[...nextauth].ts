@@ -1,7 +1,8 @@
-import NextAuth from "next-auth";
+// pages/api/auth/[...nextauth].ts
+import NextAuth, { NextAuthOptions } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 
-export default NextAuth({
+export const authOptions: NextAuthOptions = {
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
@@ -22,18 +23,12 @@ export default NextAuth({
     }),
   ],
   session: { strategy: "jwt" },
+  secret: process.env.NEXTAUTH_SECRET, // MUST in production
   callbacks: {
     async jwt({ token, account }) {
-      // sačuvaj/obnovi Google access/refresh token
-      if (account?.access_token) {
-        token.accessToken = account.access_token;
-      }
-      if (account?.refresh_token) {
-        token.refreshToken = account.refresh_token;
-      }
-      if (account?.expires_at) {
-        token.accessTokenExpires = account.expires_at * 1000;
-      }
+      if (account?.access_token) token.accessToken = account.access_token;
+      if (account?.refresh_token) token.refreshToken = account.refresh_token;
+      if (account?.expires_at) token.accessTokenExpires = account.expires_at * 1000;
       return token;
     },
     async session({ session, token }) {
@@ -42,4 +37,6 @@ export default NextAuth({
       return session;
     },
   },
-});
+};
+
+export default NextAuth(authOptions);
