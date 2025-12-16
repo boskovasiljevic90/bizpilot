@@ -2,8 +2,9 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import Stripe from "stripe";
 
+// FIX: koristimo tipizovanu verziju podržanu u stripe@14.x
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string, {
-  apiVersion: "2024-06-20",
+  apiVersion: "2023-10-16",
 });
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
