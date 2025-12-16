@@ -2,12 +2,13 @@
 import { useEffect, useState } from "react";
 import { signIn, signOut, useSession } from "next-auth/react";
 
-type GLoc = { account: string; location: { name: string; locationName?: string; title?: string } };
+type GLoc = { account: string; location: { name: string; title?: string } };
 
 export default function Dashboard() {
   const { data: session } = useSession();
   const [loading, setLoading] = useState(false);
   const [locs, setLocs] = useState<GLoc[]>([]);
+  const [diag, setDiag] = useState<any>(null);
   const [selected, setSelected] = useState<string>("");
   const [postText, setPostText] = useState("");
   const [reviewName, setReviewName] = useState("");
@@ -18,7 +19,19 @@ export default function Dashboard() {
     try {
       const r = await fetch("/api/google/locations");
       const j = await r.json();
+      if (!r.ok) {
+        alert("Google error: " + (j?.error || r.statusText));
+        console.error("locations error", j);
+        return;
+      }
       setLocs(j.locations || []);
+      setDiag(j.diag || null);
+      if ((j.locations || []).length === 0) {
+        alert("No locations found. Check that your Google account has a verified Business Profile and that Business Profile API is enabled for your OAuth project.");
+      }
+    } catch (e: any) {
+      alert("Failed to load locations: " + e.message);
+      console.error(e);
     } finally {
       setLoading(false);
     }
@@ -90,9 +103,15 @@ export default function Dashboard() {
           <p className="text-sm text-slate-400">List locations & publish Local Post</p>
           <div className="mt-3 flex gap-2">
             <button disabled={!session || loading} onClick={fetchLocations} className="px-3 py-2 rounded bg-white/10 hover:bg-white/20 disabled:opacity-50">
-              Load Locations
+              {loading ? "Loading..." : "Load Locations"}
             </button>
           </div>
+
+          {diag && (
+            <p className="mt-3 text-xs text-slate-400">
+              Accounts: {diag.accounts ?? "?"} • Locations: {diag.locations ?? "?"}
+            </p>
+          )}
 
           <div className="mt-3">
             <select value={selected} onChange={(e) => setSelected(e.target.value)} className="w-full bg-transparent rounded-lg border border-white/10 p-2">
