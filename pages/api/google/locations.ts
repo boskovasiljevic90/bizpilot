@@ -9,7 +9,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   if (!accessToken) return res.status(401).json({ error: "Not authenticated" });
 
   try {
-    const accounts = await gfetch<{ accounts?: { name: string; accountName?: string }[] }>(
+    const accounts = await gfetch<{ accounts?: { name: string }[] }>(
       "https://mybusiness.googleapis.com/v4/accounts",
       accessToken
     );
