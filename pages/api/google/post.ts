@@ -19,14 +19,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const resp = await gfetch(
       `https://mybusiness.googleapis.com/v4/${locationName}/localPosts`,
       accessToken,
-      {
-        method: "POST",
-        body: JSON.stringify({
-          languageCode: "en",
-          summary,
-          topicType: "STANDARD",
-        }),
-      }
+      { method: "POST", body: JSON.stringify({ languageCode: "en", summary, topicType: "STANDARD" }) }
     );
     res.json(resp);
   } catch (e: any) {
