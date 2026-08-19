@@ -5,8 +5,8 @@ export default function Privacy() {
   return (
     <>
       <Head>
-        <title>Privacy Policy — needAI.help (BizPilot)</title>
-        <meta name="robots" content="noindex" />
+        <title>Privacy Policy — NeedAIHelp</title>
+        <meta name="description" content="Privacy policy for NeedAIHelp and its products." />
       </Head>
       <main className="min-h-screen bg-slate-950 text-slate-100">
         <section className="max-w-3xl mx-auto px-6 py-14">
@@ -15,42 +15,31 @@ export default function Privacy() {
 
           <h2 className="mt-8 text-xl font-bold">Who we are</h2>
           <p className="mt-2 text-slate-300">
-            needAI.help — BizPilot (“we”, “us”, “our”) provides tools to help local businesses create posts and reply to reviews.
+            NeedAIHelp (“we”, “us”, “our”) builds applied AI products and solution services, including Effluxa and the upcoming VisaPilot product.
           </p>
 
-          <h2 className="mt-6 text-xl font-bold">Data we process</h2>
+          <h2 className="mt-6 text-xl font-bold">Products and data</h2>
           <ul className="mt-2 list-disc pl-6 text-slate-300">
             <li>Account data (name, email).</li>
-            <li>Billing data via Stripe (processed by Stripe; we don’t store card numbers).</li>
-            <li>Google Business Profile data you connect (locations, posts, reviews) only to provide features you request.</li>
+            <li>Effluxa account, uploaded financial-file metadata and generated audit data needed to provide the service.</li>
+            <li>Billing data processed by Paddle for Effluxa subscriptions and purchases; we do not store card numbers.</li>
+            <li>Data supplied to a NeedAIHelp product is used only to provide the requested product or service.</li>
             <li>Usage and diagnostics (aggregated analytics & logs).</li>
           </ul>
 
-          <h2 className="mt-6 text-xl font-bold">Google User Data</h2>
-          <p className="mt-2 text-slate-300">
-            We use Google OAuth only with your consent and only to access scopes required to list locations and publish posts/
-            replies. We store access tokens securely and never sell or share Google data. You can revoke access anytime in
-            your Google Account: <a className="underline" href="https://myaccount.google.com/permissions">myaccount.google.com/permissions</a>.
-          </p>
-
-          <h2 className="mt-6 text-xl font-bold">Payments</h2>
-          <p className="mt-2 text-slate-300">
-            Subscriptions are handled by Stripe. Their privacy policy applies: <a className="underline" href="https://stripe.com/privacy">stripe.com/privacy</a>.
-          </p>
-
           <h2 className="mt-6 text-xl font-bold">Data retention & deletion</h2>
           <p className="mt-2 text-slate-300">
-            We retain data as long as your account is active and as required by law. You may request deletion by contacting us at the email below.
+            We retain product data while it is needed to provide the requested service. Effluxa users can delete individual reports or their complete account from Account Settings. Paddle may retain transaction records required for merchant, tax, fraud-prevention or legal obligations.
           </p>
 
           <h2 className="mt-6 text-xl font-bold">Security</h2>
           <p className="mt-2 text-slate-300">
-            We use HTTPS everywhere, restricted tokens, and least-privilege access. No method is 100% secure, but we take reasonable measures to protect your data.
+            We use HTTPS, restricted secrets, access controls and least-privilege operational access. No method is 100% secure, but we take reasonable measures to protect data.
           </p>
 
           <h2 className="mt-6 text-xl font-bold">Contact</h2>
           <p className="mt-2 text-slate-300">
-            For privacy requests, contact: <a className="underline" href="mailto:support@needai.help">support@needai.help</a>
+            For privacy requests, contact: <a className="underline" href="mailto:support@effluxa.com">support@effluxa.com</a>
           </p>
 
           <p className="mt-8 text-xs text-slate-500">

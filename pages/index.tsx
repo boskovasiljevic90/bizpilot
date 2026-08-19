@@ -1,4 +1,18 @@
 import Head from "next/head";
+import Image from "next/image";
+
+function BrandMark() {
+  return (
+    <Image
+      src="/brand/needaihelp-mark.svg"
+      alt=""
+      width={40}
+      height={40}
+      className="h-9 w-9 object-contain"
+      aria-hidden="true"
+    />
+  );
+}
 
 export default function Home() {
   return (
@@ -10,20 +24,25 @@ export default function Home() {
           content="NeedAIHelp builds focused AI products and solution services for real business workflows."
         />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <link rel="icon" href="/brand/needaihelp-mark.svg" />
       </Head>
 
       <main className="min-h-screen overflow-hidden bg-[#07111f] text-white">
         <header className="mx-auto flex w-full max-w-6xl items-center justify-between px-6 py-7 sm:px-10">
-          <a href="/" className="text-xl font-extrabold tracking-tight sm:text-2xl" aria-label="NeedAIHelp home">
-            Need<span className="text-teal-300">AI</span>Help
+          <a href="/" className="flex items-center gap-3 text-xl font-extrabold tracking-tight sm:text-2xl" aria-label="NeedAIHelp home">
+            <BrandMark />
+            <span>Need<span className="text-teal-300">AI</span>Help</span>
           </a>
 
-          <nav className="flex items-center gap-5 text-sm text-slate-300 sm:gap-8 sm:text-base">
+          <nav className="flex items-center gap-4 text-sm text-slate-300 sm:gap-8 sm:text-base">
             <a className="transition hover:text-white" href="#about">
               About
             </a>
             <a className="transition hover:text-white" href="#products">
               Products
+            </a>
+            <a className="hidden rounded-full border border-white/15 px-4 py-2 transition hover:border-teal-200/50 hover:text-white sm:inline-flex" href="mailto:support@effluxa.com">
+              Get in touch
             </a>
           </nav>
         </header>
@@ -31,14 +50,14 @@ export default function Home() {
         <section className="mx-auto grid w-full max-w-6xl gap-14 px-6 pb-24 pt-16 sm:px-10 sm:pt-24 lg:grid-cols-[1.1fr_0.9fr] lg:items-center lg:gap-20">
           <div>
             <p className="mb-6 text-sm font-semibold uppercase tracking-[0.24em] text-teal-300">
-              Applied AI for real work
+              NeedAIHelp · Applied AI solutions
             </p>
             <h1 className="max-w-3xl text-5xl font-extrabold leading-[0.98] tracking-[-0.05em] sm:text-7xl">
-              Useful AI products for the way business actually works.
+              We turn difficult workflows into useful AI products.
             </h1>
             <p className="mt-7 max-w-2xl text-lg leading-8 text-slate-300 sm:text-xl">
-              NeedAIHelp builds focused AI solutions that turn complex workflows into clear,
-              repeatable experiences.
+              NeedAIHelp builds focused AI products and practical solution services for the work
+              people need to get done — clearly, repeatedly and with less friction.
             </p>
             <a
               href="#products"
@@ -61,10 +80,10 @@ export default function Home() {
               </div>
               <div className="py-12">
                 <p className="text-4xl font-extrabold tracking-tight sm:text-5xl">
-                  Two focused products.
+                  Focused products.
                 </p>
                 <p className="mt-3 text-2xl font-semibold text-teal-200 sm:text-3xl">
-                  One practical approach.
+                  Practical by design.
                 </p>
               </div>
               <div className="grid gap-3 text-sm text-slate-300 sm:grid-cols-2">
@@ -103,6 +122,20 @@ export default function Home() {
           </div>
         </section>
 
+        <section className="mx-auto grid w-full max-w-6xl gap-5 px-6 py-24 sm:px-10 md:grid-cols-3">
+          {[
+            ["Find the signal", "We focus AI on the information that matters, not on adding another complicated dashboard."],
+            ["Design the workflow", "Each product is shaped around a real job, with clear inputs, useful outputs and a human decision at the centre."],
+            ["Keep improving", "We ship practical systems that get better through real use, feedback and disciplined iteration."],
+          ].map(([title, description], index) => (
+            <div key={title} className="rounded-[1.75rem] border border-white/10 bg-white/[0.04] p-7">
+              <span className="text-sm font-bold text-teal-300">0{index + 1}</span>
+              <h3 className="mt-8 text-2xl font-bold tracking-tight">{title}</h3>
+              <p className="mt-3 leading-7 text-slate-400">{description}</p>
+            </div>
+          ))}
+        </section>
+
         <section id="products" className="mx-auto w-full max-w-6xl px-6 py-24 sm:px-10">
           <div className="mb-12 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <div>
@@ -114,7 +147,7 @@ export default function Home() {
               </h2>
             </div>
             <p className="max-w-sm text-slate-400">
-              Explore what is available today and what is coming next from NeedAIHelp.
+              Explore the products NeedAIHelp is bringing to market.
             </p>
           </div>
 
@@ -123,7 +156,7 @@ export default function Home() {
               <div>
                 <div className="flex items-center justify-between gap-4">
                   <span className="rounded-full bg-slate-950 px-3 py-1 text-xs font-bold uppercase tracking-[0.16em] text-white">
-                    Live product
+                    Available now
                   </span>
                   <span className="text-sm font-semibold text-slate-500">01</span>
                 </div>
@@ -141,7 +174,7 @@ export default function Home() {
                 target="_blank"
                 rel="noreferrer"
               >
-                Explore Effluxa <span className="ml-2">↗</span>
+                Visit Effluxa <span className="ml-2">↗</span>
               </a>
             </article>
 
@@ -158,7 +191,7 @@ export default function Home() {
                 </h3>
                 <p className="mt-5 max-w-lg text-lg leading-8 text-slate-300">
                   An AI-powered product for making visa and immigration workflows easier to
-                  understand and navigate.
+                  understand, prepare and navigate.
                 </p>
               </div>
               <span className="mt-10 inline-flex w-fit items-center font-bold text-teal-200">
@@ -171,10 +204,20 @@ export default function Home() {
         <footer className="border-t border-white/10">
           <div className="mx-auto flex w-full max-w-6xl flex-col gap-5 px-6 py-8 text-sm text-slate-400 sm:flex-row sm:items-center sm:justify-between sm:px-10">
             <div>
-              <p className="font-semibold text-white">NeedAIHelp</p>
-              <p className="mt-1">Applied AI products and solution services.</p>
+              <div className="flex items-center gap-3">
+                <BrandMark />
+                <div>
+                  <p className="font-semibold text-white">NeedAIHelp</p>
+                  <p className="mt-1">Applied AI products and solution services.</p>
+                </div>
+              </div>
             </div>
-            <p>Effluxa is a product by NeedAIHelp.</p>
+            <div className="flex flex-wrap gap-x-5 gap-y-2">
+              <a className="transition hover:text-white" href="/legal/privacy">Privacy</a>
+              <a className="transition hover:text-white" href="/legal/terms">Terms</a>
+              <a className="transition hover:text-white" href="mailto:support@effluxa.com">Contact</a>
+              <p>Effluxa is a product by NeedAIHelp.</p>
+            </div>
           </div>
         </footer>
       </main>

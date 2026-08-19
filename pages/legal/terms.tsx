@@ -5,8 +5,8 @@ export default function Terms() {
   return (
     <>
       <Head>
-        <title>Terms of Service — needAI.help (BizPilot)</title>
-        <meta name="robots" content="noindex" />
+        <title>Terms of Service — NeedAIHelp</title>
+        <meta name="description" content="Terms of service for NeedAIHelp and its products." />
       </Head>
       <main className="min-h-screen bg-slate-950 text-slate-100">
         <section className="max-w-3xl mx-auto px-6 py-14">
@@ -15,31 +15,29 @@ export default function Terms() {
 
           <h2 className="mt-8 text-xl font-bold">1. Agreement</h2>
           <p className="mt-2 text-slate-300">
-            By using needAI.help — BizPilot (“Service”), you agree to these Terms.
+            By using a NeedAIHelp product or service, you agree to these Terms.
           </p>
 
           <h2 className="mt-6 text-xl font-bold">2. Eligibility & Accounts</h2>
           <p className="mt-2 text-slate-300">
-            You are responsible for your account and for complying with applicable laws and third-party policies (e.g. Google, Stripe).
+            You are responsible for your account, the information you provide and complying with applicable laws and third-party policies.
           </p>
 
           <h2 className="mt-6 text-xl font-bold">3. Subscriptions & Billing</h2>
           <p className="mt-2 text-slate-300">
-            Paid plans are billed by Stripe on a recurring basis until cancelled. Taxes may apply. You can cancel anytime; access
-            continues until the end of the billing period.
+            Effluxa paid plans and one-time purchases are billed by Paddle as Merchant of Record. Taxes may apply. Subscription cancellation and billing management are available through Paddle. Other NeedAIHelp products may use different commercial terms shown at the relevant product site.
           </p>
 
           <h2 className="mt-6 text-xl font-bold">4. Acceptable Use</h2>
           <ul className="mt-2 list-disc pl-6 text-slate-300">
             <li>No unlawful, misleading, or abusive content.</li>
             <li>No attempts to bypass API rate limits or access unauthorized data.</li>
-            <li>Respect third-party platform terms (Google Business Profile, Stripe, etc.).</li>
+            <li>Respect third-party platform terms that apply to the product you use.</li>
           </ul>
 
-          <h2 className="mt-6 text-xl font-bold">5. Google & Third-Party Services</h2>
+          <h2 className="mt-6 text-xl font-bold">5. Third-Party Services</h2>
           <p className="mt-2 text-slate-300">
-            The Service integrates with Google Business Profile and other providers. Availability depends on third-party APIs and quotas.
-            We don’t guarantee uptime/approval of external services.
+            NeedAIHelp products may rely on third-party infrastructure, AI providers, payment processors and APIs. Availability depends on those providers and quotas. We do not guarantee uninterrupted operation of external services.
           </p>
 
           <h2 className="mt-6 text-xl font-bold">6. Intellectual Property</h2>
@@ -58,7 +56,7 @@ export default function Terms() {
 
           <h2 className="mt-6 text-xl font-bold">10. Contact</h2>
           <p className="mt-2 text-slate-300">
-            Questions? <a className="underline" href="mailto:support@needai.help">support@needai.help</a>
+            Questions? <a className="underline" href="mailto:support@effluxa.com">support@effluxa.com</a>
           </p>
 
           <p className="mt-8 text-xs text-slate-500">
