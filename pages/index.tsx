@@ -14,19 +14,6 @@ function BrandMark() {
   );
 }
 
-function BrandLogo() {
-  return (
-    <Image
-      src="/brand/needaihelp-logo.svg"
-      alt="NeedAIHelp"
-      width={220}
-      height={56}
-      className="h-10 w-auto sm:h-11"
-      priority
-    />
-  );
-}
-
 export default function Home() {
   return (
     <>
@@ -43,8 +30,9 @@ export default function Home() {
       <main className="min-h-screen overflow-hidden bg-[#07111f] text-white">
         <header className="border-b border-slate-200/80 bg-[#f8fafc] text-slate-950">
           <div className="mx-auto flex w-full max-w-6xl items-center justify-between px-6 py-6 sm:px-10">
-            <a href="/" className="flex items-center" aria-label="NeedAIHelp home">
-              <BrandLogo />
+            <a href="/" className="flex items-center gap-3 text-xl font-extrabold tracking-tight sm:text-2xl" aria-label="NeedAIHelp home">
+              <BrandMark />
+              <span className="text-blue-600">Need<span className="text-teal-500">AI</span>Help</span>
             </a>
 
             <nav className="flex items-center gap-4 text-sm text-slate-600 sm:gap-8 sm:text-base">
