@@ -13,3 +13,4 @@ The NeedAIHelp wordmark uses navy text with `AI` in cobalt blue. The mark keeps 
 
 - `../social/needaihelp-linkedin-profile.png` — 300 × 300
 - `../social/needaihelp-linkedin-cover.png` — 1128 × 191
+- `../social/needaihelp-facebook-cover.png` — 1640 × 624
