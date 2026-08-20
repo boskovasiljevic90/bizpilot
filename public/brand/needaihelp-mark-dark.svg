@@ -1,0 +1,7 @@
+<svg width="512" height="512" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <title>NeedAIHelp mark</title>
+  <rect x="5" y="5" width="9" height="30" rx="3" fill="#60A5FA"/>
+  <rect x="26" y="5" width="9" height="30" rx="3" fill="#60A5FA"/>
+  <path d="M11 12L29 28" stroke="#07111F" stroke-width="7" stroke-linecap="round"/>
+  <path d="M11 12L29 28" stroke="#2DD4BF" stroke-width="4" stroke-linecap="round"/>
+</svg>

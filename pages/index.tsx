@@ -15,14 +15,8 @@ export default function Home() {
       <main className="min-h-screen overflow-hidden bg-[#07111f] text-white">
         <header className="border-b border-slate-200 bg-white text-slate-950">
           <div className="mx-auto flex w-full max-w-6xl items-center justify-between px-6 py-5 sm:px-10 sm:py-6">
-            <a href="/" className="flex items-center gap-3 text-xl font-extrabold tracking-tight sm:text-2xl" aria-label="NeedAIHelp home">
-              <svg viewBox="0 0 40 40" className="h-9 w-9 shrink-0" aria-hidden="true">
-                <rect x="5" y="5" width="9" height="30" rx="3" fill="#2563eb" />
-                <rect x="26" y="5" width="9" height="30" rx="3" fill="#2563eb" />
-                <path d="M11 12 L29 28" stroke="#ffffff" strokeWidth="7" strokeLinecap="round" />
-                <path d="M11 12 L29 28" stroke="#5eead4" strokeWidth="4" strokeLinecap="round" />
-              </svg>
-              <span>Need<span className="text-blue-700">AI</span>Help</span>
+            <a href="/" className="block shrink-0" aria-label="NeedAIHelp home">
+              <img src="/brand/needaihelp-wordmark.svg" className="h-9 w-auto sm:h-10" alt="NeedAIHelp" />
             </a>
 
             <nav className="flex items-center gap-4 text-sm font-semibold text-slate-600 sm:gap-8 sm:text-base">
@@ -185,14 +179,8 @@ export default function Home() {
         <footer className="border-t border-white/10">
           <div className="mx-auto flex w-full max-w-6xl flex-col gap-5 px-6 py-8 text-sm text-slate-400 sm:flex-row sm:items-center sm:justify-between sm:px-10">
             <div className="flex items-center gap-3">
-              <svg viewBox="0 0 40 40" className="h-8 w-8 shrink-0" aria-hidden="true">
-                <rect x="5" y="5" width="9" height="30" rx="3" fill="#60a5fa" />
-                <rect x="26" y="5" width="9" height="30" rx="3" fill="#60a5fa" />
-                <path d="M11 12 L29 28" stroke="#07111f" strokeWidth="7" strokeLinecap="round" />
-                <path d="M11 12 L29 28" stroke="#5eead4" strokeWidth="4" strokeLinecap="round" />
-              </svg>
+              <img src="/brand/needaihelp-wordmark-dark.svg" className="h-8 w-auto" alt="NeedAIHelp" />
               <div>
-                <p className="font-semibold text-white">NeedAIHelp</p>
               <p className="mt-1">Applied AI products and solution services.</p>
               </div>
             </div>
