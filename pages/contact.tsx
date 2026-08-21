@@ -163,7 +163,11 @@ export default function ContactPage() {
               <img src="/brand/needaihelp-wordmark-dark.svg" className="h-8 w-auto" alt="NeedAIHelp" />
               <p>Applied AI products and solution services.</p>
             </div>
-            <p>Effluxa is a product by NeedAIHelp.</p>
+            <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+              <a className="transition hover:text-teal-200" href="/legal/privacy">Privacy</a>
+              <a className="transition hover:text-teal-200" href="/legal/terms">Terms</a>
+              <span>Effluxa is a product by NeedAIHelp.</span>
+            </div>
           </div>
         </footer>
       </main>

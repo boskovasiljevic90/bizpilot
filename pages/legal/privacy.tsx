@@ -1,60 +1,90 @@
-// pages/legal/privacy.tsx
 import Head from "next/head";
 
 export default function Privacy() {
   return (
     <>
       <Head>
-        <title>Privacy Policy — needAI.help (BizPilot)</title>
-        <meta name="robots" content="noindex" />
+        <title>Privacy Policy — NeedAIHelp</title>
+        <meta
+          name="description"
+          content="Privacy information for the NeedAIHelp company website and contact requests."
+        />
       </Head>
-      <main className="min-h-screen bg-slate-950 text-slate-100">
-        <section className="max-w-3xl mx-auto px-6 py-14">
-          <h1 className="text-3xl font-extrabold">Privacy Policy</h1>
-          <p className="mt-3 text-sm text-slate-400">Last updated: {new Date().toISOString().slice(0,10)}</p>
 
-          <h2 className="mt-8 text-xl font-bold">Who we are</h2>
-          <p className="mt-2 text-slate-300">
-            needAI.help — BizPilot (“we”, “us”, “our”) provides tools to help local businesses create posts and reply to reviews.
-          </p>
+      <main className="min-h-screen bg-[#07111f] text-slate-100">
+        <section className="mx-auto max-w-3xl px-6 py-14 sm:px-10">
+          <a className="text-teal-200 hover:underline" href="/">← Back to NeedAIHelp</a>
+          <h1 className="mt-10 text-4xl font-extrabold tracking-tight sm:text-5xl">Privacy Policy</h1>
+          <p className="mt-3 text-sm text-slate-400">Last updated: 21 August 2026</p>
 
-          <h2 className="mt-6 text-xl font-bold">Data we process</h2>
-          <ul className="mt-2 list-disc pl-6 text-slate-300">
-            <li>Account data (name, email).</li>
-            <li>Billing data via Stripe (processed by Stripe; we don’t store card numbers).</li>
-            <li>Google Business Profile data you connect (locations, posts, reviews) only to provide features you request.</li>
-            <li>Usage and diagnostics (aggregated analytics & logs).</li>
-          </ul>
+          <div className="mt-10 space-y-7 text-slate-300 [&_h2]:text-xl [&_h2]:font-bold [&_p]:leading-8 [&_ul]:list-disc [&_ul]:space-y-2 [&_ul]:pl-6">
+            <section>
+              <h2>Who we are</h2>
+              <p className="mt-2">
+                NeedAIHelp is an applied AI solutions company. Our portfolio includes Effluxa, an AI
+                financial intelligence product, and VisaPilot, which is currently in development.
+              </p>
+            </section>
 
-          <h2 className="mt-6 text-xl font-bold">Google User Data</h2>
-          <p className="mt-2 text-slate-300">
-            We use Google OAuth only with your consent and only to access scopes required to list locations and publish posts/
-            replies. We store access tokens securely and never sell or share Google data. You can revoke access anytime in
-            your Google Account: <a className="underline" href="https://myaccount.google.com/permissions">myaccount.google.com/permissions</a>.
-          </p>
+            <section>
+              <h2>Information we receive</h2>
+              <p className="mt-2">
+                The NeedAIHelp company website is primarily an informational site. We receive information
+                that you choose to send to us, such as your name, email address, subject and message when
+                you contact support or make a business enquiry. Hosting and security providers may also
+                process basic technical information needed to deliver and protect the website.
+              </p>
+            </section>
 
-          <h2 className="mt-6 text-xl font-bold">Payments</h2>
-          <p className="mt-2 text-slate-300">
-            Subscriptions are handled by Stripe. Their privacy policy applies: <a className="underline" href="https://stripe.com/privacy">stripe.com/privacy</a>.
-          </p>
+            <section>
+              <h2>How we use information</h2>
+              <ul className="mt-2">
+                <li>To answer support, partnership and product enquiries.</li>
+                <li>To operate, secure and improve the NeedAIHelp website.</li>
+                <li>To direct you to the relevant product when you choose to explore Effluxa or VisaPilot.</li>
+              </ul>
+            </section>
 
-          <h2 className="mt-6 text-xl font-bold">Data retention & deletion</h2>
-          <p className="mt-2 text-slate-300">
-            We retain data as long as your account is active and as required by law. You may request deletion by contacting us at the email below.
-          </p>
+            <section>
+              <h2>Product-specific services</h2>
+              <p className="mt-2">
+                If you use Effluxa, that product processes account, uploaded-document and report data under
+                the Effluxa privacy information. Effluxa payments are handled by Paddle. NeedAIHelp does not
+                store card numbers. Paddle acts as Merchant of Record for digital products sold through its
+                checkout and handles the related payment and tax transaction functions.
+              </p>
+            </section>
 
-          <h2 className="mt-6 text-xl font-bold">Security</h2>
-          <p className="mt-2 text-slate-300">
-            We use HTTPS everywhere, restricted tokens, and least-privilege access. No method is 100% secure, but we take reasonable measures to protect your data.
-          </p>
+            <section>
+              <h2>Retention and deletion</h2>
+              <p className="mt-2">
+                Contact enquiries are kept only for as long as reasonably needed to respond, maintain a
+                business record or resolve a dispute. You can request deletion of personal information held
+                by NeedAIHelp by emailing support@needai.help. Product account and billing retention is handled
+                under the relevant product policy and provider requirements.
+              </p>
+            </section>
 
-          <h2 className="mt-6 text-xl font-bold">Contact</h2>
-          <p className="mt-2 text-slate-300">
-            For privacy requests, contact: <a className="underline" href="mailto:support@needai.help">support@needai.help</a>
-          </p>
+            <section>
+              <h2>Security</h2>
+              <p className="mt-2">
+                We use reasonable technical and organisational measures to protect information. No internet
+                service can guarantee absolute security, so please do not send passwords, card numbers or
+                unnecessary sensitive financial documents by email.
+              </p>
+            </section>
 
-          <p className="mt-8 text-xs text-slate-500">
-            This policy is provided for compliance context and does not constitute legal advice.
+            <section>
+              <h2>Contact</h2>
+              <p className="mt-2">
+                Privacy requests and questions: <a className="text-teal-200 underline" href="mailto:support@needai.help">support@needai.help</a>
+              </p>
+            </section>
+          </div>
+
+          <p className="mt-10 text-xs leading-6 text-slate-500">
+            This policy describes the current NeedAIHelp website baseline and is not legal advice. Please
+            obtain jurisdiction-specific legal advice where required.
           </p>
         </section>
       </main>
