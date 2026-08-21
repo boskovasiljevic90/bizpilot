@@ -28,7 +28,7 @@ export default function Home() {
               </a>
               <a
                 className="hidden rounded-full border border-slate-300 px-4 py-2.5 text-slate-950 transition hover:border-blue-600 hover:text-blue-700 sm:inline-flex sm:px-5"
-                href="mailto:support@needai.help"
+                href="/contact"
               >
                 Get in touch
               </a>
